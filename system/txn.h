@@ -67,6 +67,7 @@ public:
     void reset(uint64_t pool_id);
     void release(uint64_t pool_id);
     txnid_t txn_id;
+    Epoch* epoch; //Epoch required for each transaction of BFT-SMaRt
     uint64_t batch_id;
     RC rc;
 };
@@ -141,6 +142,8 @@ public:
     Workload *get_wl();
     void set_txn_id(txnid_t txn_id);
     txnid_t get_txn_id();
+    void set_epoch(Epoch* epoch);
+    Epoch* get_epoch();
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();
@@ -161,8 +164,6 @@ public:
     void set_batch_id(uint64_t batch_id) { txn->batch_id = batch_id; }
 
     Transaction *txn;
-
-    Epoch epoch; //Epoch required for each transaction BFT-SMaRt
 
     BaseQuery *query;        // Client query.
     uint64_t client_startts; // Client timestamp for this transaction.

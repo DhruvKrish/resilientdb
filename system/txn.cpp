@@ -265,6 +265,14 @@ txnid_t TxnManager::get_txn_id()
     return txn->txn_id;
 }
 
+void TxnManager::set_epoch(Epoch* epoch){
+    txn->epoch = epoch;
+}
+
+Epoch* TxnManager::get_epoch(){
+    return txn->epoch;
+}
+
 Workload *TxnManager::get_wl()
 {
     return h_wl;
