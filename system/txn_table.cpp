@@ -110,9 +110,13 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         // Allocate memory for a txn manager.
         txn_man_pool.get(txn_id, txn_man);
 
+        //Create an Epoch
+        Epoch* epoch = new Epoch();
+
         // Set fields for txn manager.
         txn_man->set_txn_id(txn_id);
         txn_man->set_batch_id(batch_id);
+        txn_man->set_epoch(epoch);
 
         t_node->txn_man = txn_man;
         txn_man->txn_stats.starttime = get_sys_clock();
