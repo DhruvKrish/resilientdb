@@ -1105,6 +1105,8 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     }
 
     txn_man->set_hash(breq->hash);
+    //Set PropValue of Epoch with hash of request.
+    txn_man->get_epoch()->set_propValue(breq->hash);
 }
 
 /**
@@ -1187,6 +1189,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 
     // Generating the hash representing the whole batch in last txn man.
     txn_man->set_hash(calculateHash(batchStr));
+    //Set hash to PropValue in epoch
+    txn_man->get_epoch()->set_propValue(txn_man->get_hash());
     txn_man->hashSize = txn_man->hash.length();
 
     breq->copy_from_txn(txn_man);
