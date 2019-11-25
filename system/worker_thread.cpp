@@ -1332,7 +1332,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
     if (txn_man->get_hash().empty())
     {
         // Store the message.
-        txn_man->info_prepare.push_back(msg->return_node);
+        txn_man->info_prepare.push_back(msg);
         return false;
     }
     else
@@ -1347,8 +1347,9 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
         }
     }
 
-    uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
-    if (prep_cnt == 0)
+    txn_man->get_epoch()->setPrepareValues(msg->get_return_id(),msg->hash);
+    //uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
+    if (txn_man->get_epoch()->countPrepare(msg->hash)==txn_man->prep_rsp_cnt)
     {
         txn_man->set_prepared();
         return true;

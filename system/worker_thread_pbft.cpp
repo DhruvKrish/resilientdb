@@ -27,7 +27,7 @@
  */
 RC WorkerThread::process_client_batch(Message *msg)
 {
-    //printf("ClientQueryBatch: %ld, THD: %ld :: CL: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->return_node_id, clbtch->cqrySet[0]->requests[0]->key);
+    //printf("ClientQueryBatch: %ld, THD: %ld :: CL: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->, clbtch->cqrySet[0]->requests[0]->key);
     //fflush(stdout);
 
     ClientQueryBatch *clbtch = (ClientQueryBatch *)msg;
@@ -108,8 +108,10 @@ RC WorkerThread::process_batch(Message *msg)
     for (uint64_t i = 0; i < txn_man->info_prepare.size(); i++)
     {
         // Decrement.
-        uint64_t num_prep = txn_man->decr_prep_rsp_cnt();
-        if (num_prep == 0)
+        //uint64_t num_prep = txn_man->decr_prep_rsp_cnt();
+
+        txn_man->get_epoch()->setPrepareValues(txn_man->info_prepare[i]->get_return_id(),txn_man->info_prepare[i]->hash);
+        if (txn_man->get_epoch()->countPrepare(txn_man->info_prepare[i]->hash)==txn_man->prep_rsp_cnt)
         {
             txn_man->set_prepared();
             break;
@@ -129,8 +131,8 @@ RC WorkerThread::process_batch(Message *msg)
         // Check if any Commit messages arrived before this BatchRequests message.
         for (uint64_t i = 0; i < txn_man->info_commit.size(); i++)
         {
-            uint64_t num_comm = txn_man->decr_commit_rsp_cnt();
-            if (num_comm == 0)
+            txn_man->get_epoch()->setCommitValues(txn_man->info_commit[i]->get_return_id(),txn_man->info_commit[i]->hash);
+            if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(txn_man->info_commit[i]->hash) && txn_man->is_prepared())
             {
                 txn_man->set_committed();
                 break;
@@ -156,7 +158,7 @@ RC WorkerThread::process_batch(Message *msg)
         // Although batch has not prepared, still some commit messages could have arrived.
         for (uint64_t i = 0; i < txn_man->info_commit.size(); i++)
         {
-            txn_man->decr_commit_rsp_cnt();
+            txn_man->get_epoch()->setCommitValues(txn_man->info_commit[i]->get_return_id(),txn_man->info_commit[i]->hash);
         }
     }
 
@@ -246,7 +248,7 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
     {
         //cout << "hash empty: " << txn_man->get_txn_id() << "\n";
         //fflush(stdout);
-        txn_man->info_commit.push_back(msg->return_node);
+        txn_man->info_commit.push_back(msg);
         return false;
     }
     else
@@ -261,8 +263,9 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
         }
     }
 
-    uint64_t comm_cnt = txn_man->decr_commit_rsp_cnt();
-    if (comm_cnt == 0 && txn_man->is_prepared())
+    //uint64_t comm_cnt = txn_man->_cnt();
+    txn_man->get_epoch()->setCommitValues(msg->get_return_id(),msg->hash);
+    if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(msg->hash) && txn_man->is_prepared())
     {
         txn_man->set_committed();
         return true;

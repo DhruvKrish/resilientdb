@@ -51,10 +51,9 @@ public:
     //set commitValues
     void setCommitValues(int node_id, string value);
 
-    int count(vector<bool> setted,vector<string> values,
-    string value);
-    int countPrepare(string value);
-    int countCommit(string value);
+    uint64_t count(vector<bool> setted,vector<string> values,string value);
+    uint64_t countPrepare(string value);
+    uint64_t countCommit(string value);
 
     void set_propValue(string hash);
     string get_propValue();
@@ -188,7 +187,7 @@ public:
     uint64_t cbatch;
 
     uint64_t prep_rsp_cnt;
-    vector<uint64_t> info_prepare;
+    vector<PBFTPrepMessage*> info_prepare;
 
     uint64_t decr_prep_rsp_cnt();
     uint64_t get_prep_rsp_cnt();
@@ -199,7 +198,7 @@ public:
 
     uint64_t commit_rsp_cnt;
     bool committed_local = false;
-    vector<uint64_t> info_commit;
+    vector<PBFTCommitMessage*> info_commit;
 
     uint64_t decr_commit_rsp_cnt();
     uint64_t get_commit_rsp_cnt();
