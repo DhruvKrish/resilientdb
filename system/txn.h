@@ -14,6 +14,52 @@ class BaseQuery;
 class TxnQEntry;
 class YCSBQuery;
 
+class Epoch
+{
+public:
+    //The ID of the node on which this code is running
+    //const int thisNode;
+    //bool to check if received Prepare message from a particular node id.
+    vector<bool> prepareSetted;
+    //bool to check if received Commit message from a particular node id.
+    vector<bool> commitSetted;
+    vector<string> prepareValues;
+    vector<string> commitValues;
+    bool commitSent;
+    bool executeSent;
+    //Value received from leader/primary during Propose/Pre-Prepare phase
+    //Equivalent to TxnManager hash; Same functionality
+    string propValue;
+
+    Epoch(){
+        prepareSetted.assign(g_node_cnt,false);
+        commitSetted.assign(g_node_cnt,false);
+        prepareValues.assign(g_node_cnt,"");
+        commitValues.assign(g_node_cnt,"");
+
+        commitSent=false;
+        executeSent=false;
+        propValue="";
+    };
+
+    //get prepareValues
+    vector<string> getPrepareValues();
+    //get commitValues
+    vector<string> getCommitValues();
+    //set prepareValues
+    void setPrepareValues(int node_id, string value);
+    //set commitValues
+    void setCommitValues(int node_id, string value);
+
+    int count(vector<bool> setted,vector<string> values,
+    string value);
+    int countPrepare(string value);
+    int countCommit(string value);
+
+    bool isPrepareSetted(int node_id);
+    bool isCommitSetted(int node_id);
+};
+
 class Transaction
 {
 public:
@@ -116,6 +162,8 @@ public:
 
     Transaction *txn;
 
+    Epoch epoch; //Epoch required for each transaction BFT-SMaRt
+
     BaseQuery *query;        // Client query.
     uint64_t client_startts; // Client timestamp for this transaction.
     uint64_t client_id;      // Id of client that sent this transaction.
@@ -181,3 +229,4 @@ protected:
 };
 
 #endif
+
