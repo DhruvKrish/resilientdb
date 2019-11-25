@@ -10,6 +10,18 @@
 #include "ycsb_query.h"
 #include "array.h"
 
+
+void Epoch::set_propValue(string hsh)
+{
+    propValue = hsh;
+}
+
+string Epoch::get_propValue()
+{
+    return propValue;
+}
+
+ 
 void TxnStats::init()
 {
     starttime = 0;

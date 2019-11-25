@@ -58,6 +58,10 @@ public:
 
     bool isPrepareSetted(int node_id);
     bool isCommitSetted(int node_id);
+    
+    void set_propValue(string hash);
+    string get_propValue();
+
 };
 
 class Transaction
