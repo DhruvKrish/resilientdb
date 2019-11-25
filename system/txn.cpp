@@ -10,6 +10,62 @@
 #include "ycsb_query.h"
 #include "array.h"
 
+vector<string> Epoch::getPrepareValues()
+{
+    return prepareValues;
+}
+
+vector<string> Epoch::getCommitValues()
+{
+    return commitValues;
+}
+
+void Epoch::setPrepareValues(int node_id, string value)
+{
+    prepareValues[node_id]=value;
+}
+
+void Epoch::setCommitValues(int node_id, string value)
+{
+    commitValues[node_id]=value;
+}
+
+int Epoch::count(vector<bool> setted,vector<string> values,
+    string value)
+{
+    if(value!="")
+    {
+        int counter=0;
+        for(int i=0;i<(int)values.size();i++)
+        {
+            if(values[i]!="" && setted[i] && values[i].compare(value)==0){
+                counter++;
+            }
+        }
+    }
+    return 0;
+}
+
+int Epoch::countPrepare(string value)
+{
+    return count(prepareSetted,prepareValues,value);
+}
+
+int Epoch::countCommit(string value)
+{
+    return count(commitSetted,commitValues,value);
+}
+
+void Epoch::set_propValue(string hsh)
+{
+    propValue = hsh;
+}
+
+string Epoch::get_propValue()
+{
+    return propValue;
+}
+
 void TxnStats::init()
 {
     starttime = 0;

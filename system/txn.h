@@ -40,7 +40,7 @@ public:
         commitSent=false;
         executeSent=false;
         propValue="";
-    };
+    }
 
     //get prepareValues
     vector<string> getPrepareValues();
@@ -56,8 +56,8 @@ public:
     int countPrepare(string value);
     int countCommit(string value);
 
-    bool isPrepareSetted(int node_id);
-    bool isCommitSetted(int node_id);
+    void set_propValue(string hash);
+    string get_propValue();
 };
 
 class Transaction
