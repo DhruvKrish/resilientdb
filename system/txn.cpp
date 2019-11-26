@@ -482,7 +482,7 @@ void TxnManager::send_pbft_prep_msgs()
         decr_prep_rsp_cnt();
     }
 #endif
-
+    txn->epoch->setPrepareValues(g_node_id, pmsg->hash);
     vector<string> emptyvec;
     vector<uint64_t> dest;
     for (uint64_t i = 0; i < g_node_cnt; i++)
@@ -513,7 +513,7 @@ void TxnManager::send_pbft_commit_msgs()
         decr_commit_rsp_cnt();
     }
 #endif
-
+    txn->epoch->setCommitValues(g_node_id, cmsg->hash);
     vector<string> emptyvec;
     vector<uint64_t> dest;
     for (uint64_t i = 0; i < g_node_cnt; i++)
