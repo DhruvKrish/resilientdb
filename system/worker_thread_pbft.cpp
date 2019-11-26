@@ -111,7 +111,8 @@ RC WorkerThread::process_batch(Message *msg)
         //uint64_t num_prep = txn_man->decr_prep_rsp_cnt();
 
         txn_man->get_epoch()->setPrepareValues(txn_man->info_prepare[i]->get_return_id(),txn_man->info_prepare[i]->hash);
-        if (txn_man->get_epoch()->countPrepare(txn_man->info_prepare[i]->hash)==txn_man->prep_rsp_cnt)
+        if (txn_man->get_epoch()->countPrepare(txn_man->info_prepare[i]->hash)==txn_man->prep_rsp_cnt 
+        && (txn_man->info_prepare[i]->hash).compare(txn_man->get_epoch()->propValue)==0)
         {
             txn_man->set_prepared();
             break;
@@ -132,7 +133,8 @@ RC WorkerThread::process_batch(Message *msg)
         for (uint64_t i = 0; i < txn_man->info_commit.size(); i++)
         {
             txn_man->get_epoch()->setCommitValues(txn_man->info_commit[i]->get_return_id(),txn_man->info_commit[i]->hash);
-            if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(txn_man->info_commit[i]->hash) && txn_man->is_prepared())
+            if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(txn_man->info_commit[i]->hash) 
+            && (txn_man->info_commit[i]->hash).compare(txn_man->get_epoch()->propValue)==0 && txn_man->is_prepared())
             {
                 txn_man->set_committed();
                 break;
@@ -265,7 +267,8 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 
     //uint64_t comm_cnt = txn_man->_cnt();
     txn_man->get_epoch()->setCommitValues(msg->get_return_id(),msg->hash);
-    if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(msg->hash) && txn_man->is_prepared())
+    if (txn_man->commit_rsp_cnt == txn_man->get_epoch()->countCommit(msg->hash) 
+    && (msg->hash).compare(txn_man->get_epoch()->propValue)==0 && txn_man->is_prepared())
     {
         txn_man->set_committed();
         return true;
