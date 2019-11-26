@@ -1194,7 +1194,7 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     txn_man->set_hash(calculateHash(batchStr));
     //Set hash to PropValue in epoch
     txn_man->get_epoch()->set_propValue(txn_man->get_hash());
-    txn_man->get_epoch()->setPrepareValues(g_node_id,txn_man->get_hash());
+   
     txn_man->hashSize = txn_man->hash.length();
 
     breq->copy_from_txn(txn_man);

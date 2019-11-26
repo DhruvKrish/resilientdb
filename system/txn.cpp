@@ -40,7 +40,7 @@ uint64_t Epoch::count(vector<bool> setted,vector<string> values,
         uint64_t counter=0;
         for(int i=0;i<(int)values.size();i++)
         {
-            if(values[i]!="" && setted[i] && values[i].compare(value)==0){
+            if(values[i]!="" && setted[i] && values[i].compare(value)==0) {
                 counter++;
             }
         }
@@ -208,8 +208,8 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
 
     prepared = false;
     committed_local = false;
-    prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    prep_rsp_cnt = (g_node_cnt + g_min_invalid_nodes)/2;
+    commit_rsp_cnt = (g_node_cnt + g_min_invalid_nodes)/2;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     txn_stats.init();
