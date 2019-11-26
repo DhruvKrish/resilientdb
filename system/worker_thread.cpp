@@ -1107,6 +1107,9 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     txn_man->set_hash(breq->hash);
     //Set PropValue of Epoch with hash of request.
     txn_man->get_epoch()->set_propValue(breq->hash);
+    
+    
+
 }
 
 /**
@@ -1191,6 +1194,7 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     txn_man->set_hash(calculateHash(batchStr));
     //Set hash to PropValue in epoch
     txn_man->get_epoch()->set_propValue(txn_man->get_hash());
+    txn_man->get_epoch()->setPrepareValues(g_node_id,txn_man->get_hash());
     txn_man->hashSize = txn_man->hash.length();
 
     breq->copy_from_txn(txn_man);
@@ -1349,7 +1353,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 
     txn_man->get_epoch()->setPrepareValues(msg->get_return_id(),msg->hash);
     //uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
-    if (txn_man->get_epoch()->countPrepare(msg->hash)==txn_man->prep_rsp_cnt)
+    if (txn_man->get_epoch()->countPrepare(msg->hash)==txn_man->prep_rsp_cnt && (msg->hash).compare(txn_man->get_epoch()->propValue)==0)
     {
         txn_man->set_prepared();
         return true;
