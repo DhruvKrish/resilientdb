@@ -155,8 +155,10 @@ RC ClientThread::run()
 		last_send_time = get_sys_clock();
 		assert(m_query);
 
-		DEBUG("Client: thread %lu sending query to node: %u, %d, %f\n",
-			  _thd_id, next_node_id, inf_cnt, simulation->seconds_from_start(get_sys_clock()));
+		/*DEBUG("Client: thread %lu sending query to node: %u, %d, %f\n",
+			  _thd_id, next_node_id, inf_cnt, simulation->seconds_from_start(get_sys_clock()));*/
+
+		DEBUG("Client: thread %lu sending query to all nodes as per BFT-SMaRt",_thd_id);
 
 		Message *msg = Message::create_message((BaseQuery *)m_query, CL_QRY);
 		((ClientQueryMessage *)msg)->client_startts = get_sys_clock();
@@ -164,7 +166,21 @@ RC ClientThread::run()
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
 
-		msg_queue.enqueue(get_thd_id(), msg, next_node_id);
+		vector<string> emptyvec;
+    	vector<uint64_t> dest;
+
+		for (uint64_t i = 0; i < g_node_cnt; i++)
+        {
+        if (i == g_node_id)
+        {
+            continue;
+        }
+        dest.push_back(i);
+        }
+
+    	msg_queue.enqueue(get_thd_id(), msg, emptyvec, dest);
+    	dest.clear();
+
 		num_txns_sent++;
 		txns_sent[next_node]++;
 		INC_STATS(get_thd_id(), txn_sent_cnt, 1);
