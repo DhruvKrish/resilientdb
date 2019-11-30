@@ -86,14 +86,18 @@ void WorkerThread::setup()
 void WorkerThread::process(Message *msg)
 {
     RC rc __attribute__((unused));
-
+    uint32_t primary_node_id = get_view();
     switch (msg->get_rtype())
     {
     case KEYEX:
         rc = process_key_exchange(msg);
         break;
     case CL_BATCH:
-        rc = process_client_batch(msg);
+        //Only Primary can send Batch Requests to Other Replicas as per BFT-SMaRt
+        if (g_node_id == primary_node_id)
+        {
+            rc = process_client_batch(msg);
+        }
         break;
     case BATCH_REQ:
         rc = process_batch(msg);
@@ -1107,9 +1111,6 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     txn_man->set_hash(breq->hash);
     //Set PropValue of Epoch with hash of request.
     txn_man->get_epoch()->set_propValue(breq->hash);
-    
-    
-
 }
 
 /**
@@ -1350,9 +1351,9 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
         }
     }
 
-    txn_man->get_epoch()->setPrepareValues(msg->get_return_id(),msg->hash);
+    txn_man->get_epoch()->setPrepareValues(msg->get_return_id(), msg->hash);
     //uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
-    if (txn_man->get_epoch()->countPrepare(msg->hash)==txn_man->prep_rsp_cnt && (msg->hash).compare(txn_man->get_epoch()->propValue)==0)
+    if (txn_man->get_epoch()->countPrepare(msg->hash) == txn_man->prep_rsp_cnt && (msg->hash).compare(txn_man->get_epoch()->propValue) == 0)
     {
         txn_man->set_prepared();
         return true;
