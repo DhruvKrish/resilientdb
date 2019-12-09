@@ -208,8 +208,8 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
 
     prepared = false;
     committed_local = false;
-    prep_rsp_cnt = (g_node_cnt + g_min_invalid_nodes)/2;
-    commit_rsp_cnt = (g_node_cnt + g_min_invalid_nodes)/2;
+    prep_rsp_cnt = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt = prep_rsp_cnt + 1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     txn_stats.init();
@@ -235,6 +235,9 @@ void TxnManager::release(uint64_t pool_id)
 {
 
     uint64_t tid = get_txn_id();
+
+    //Free epoch memory used by BFT-SMaRt
+    delete get_epoch();
 
     qry_pool.put(pool_id, query);
     query = NULL;
