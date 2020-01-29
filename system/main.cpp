@@ -14,6 +14,7 @@
 #include "client_query.h"
 #include "crypto.h"
 #include "timer.h"
+#include "chain.h"
 
 void network_test();
 void network_test_recv();
@@ -45,6 +46,17 @@ int main(int argc, char *argv[])
     fflush(stdout);
     stats.init(g_total_thread_cnt);
     printf("Done\n");
+
+    printf("Initializing DB %s... ", db->dbInstance().c_str());
+    fflush(stdout);
+    db->Open("db");
+
+    printf("DB testing\nInsert key K1 with value V1\n");
+    db->Put("K1", "V1");
+    printf("Reading value for key K1 = %s\n", db->Get("K1").c_str());
+
+    printf("Done\n");
+    fflush(stdout);
 
     printf("Initializing transport manager... ");
     fflush(stdout);
@@ -102,6 +114,11 @@ int main(int argc, char *argv[])
     printf("Initializing transaction table... ");
     fflush(stdout);
     txn_table.init();
+    printf("Done\n");
+
+    printf("Initializing Chain... ");
+    fflush(stdout);
+    BlockChain = new  BChain();
     printf("Done\n");
 
 #if TIMER_ON
