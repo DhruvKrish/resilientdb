@@ -4,8 +4,9 @@
 #The first column in each table is a timestamp as InfluxDB is a time series database.
 #The grafana database is used to create graphs in grafana setup in the development machine.
 #!/bin/bash
+DEV_MACHINE_IP="$1"
 touch toInflux_dummy_.out
-curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE grafana"
+curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/query' --data-urlencode "q=CREATE DATABASE grafana"
 while true; do
     echo "In monitorResults.sh"
     filename=$(inotifywait --format '%w%f' -e modify toInflux_*_.out)
@@ -15,7 +16,7 @@ while true; do
     IFS=','
     throughput=$(tail -1 $filename)
     echo "tp - $throughput"
-    curl -i -XPOST 'http://localhost:8086/write?db=grafana' --data-binary $node' throughput='$throughput
+    curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/write?db=grafana' --data-binary $node' throughput='$throughput
     done
     if test -f "toInflux_dummy_.out"; then
         rm toInflux_dummy_.out

@@ -1,5 +1,5 @@
 #!/bin/bash
-(sh monitorResults.sh) &
+(sh monitorResults.sh localhost) &
 unset GREP_OPTIONS
 RED='\033[0;31m'
 GREEN='\033[0;32m'
