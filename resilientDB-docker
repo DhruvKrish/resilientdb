@@ -1,4 +1,5 @@
 #!/bin/bash
+(sh monitorResults.sh) &
 unset GREP_OPTIONS
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -134,9 +135,11 @@ for i in $(seq 1 $clients); do
     docker exec c${i} pkill runcl
     docker exec c${i} ./runcl -nid$((i + replicas - 1)) >results/s${replicas}_c${clients}_results_PBFT_b100_run0_node$((i + replicas - 1)).out &
 done
+proc1=$!
 printf "${GREEN}Clients started successfully${NC}\n"
 
-wait
+wait "$proc1" 
+kill $(pidof sh monitorResults.sh)
 
 scripts/result.sh ${replicas} ${clients} PBFT 100 0 >res.out
 scripts/result_colorized.sh ${replicas} ${clients} PBFT 100 0
