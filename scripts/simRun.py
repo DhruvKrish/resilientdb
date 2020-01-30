@@ -8,6 +8,7 @@ import os,sys,datetime,re
 import shlex
 import subprocess
 import itertools
+import socket
 from sys import argv
 from hostnames import *
 home_directory="/home/expo"
@@ -15,6 +16,10 @@ PATH=os.getcwd()
 #result_dir = PATH + "/results/"
 result_dir = home_directory+"/resilientdb/results/"
 
+
+hostname = socket.gethostname()
+IPAddr = socket.gethostbyname(hostname)
+print("IP Address is:", IPAddr)
 # Total nodes
 nds = int(argv[1])
 resfile = argv[2]
@@ -42,7 +47,14 @@ os.system(cmd)
 
 ##if run == 0:
 os.system("./scp_binaries.sh {} {}".format(nds,1 if send_ifconfig else 0))
-	
+
+
+#running monitorResults
+cmd_monitor= './vcloud_monitor.sh \"{}\" \"{}\"'.format(' '.join(machines),IPAddr)
+print(cmd_monitor)
+os.system(cmd_monitor)
+
+
 # running the experiment
 cmd = './vcloud_deploy.sh \"{}\" {} \"{}\"'.format(' '.join(machines),nds,resfile)
 print(cmd)

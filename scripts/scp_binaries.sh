@@ -14,6 +14,9 @@ do
 	else
 		cmd="scp runcl expo@${line}:${home_directory}/resilientdb/"
 	fi
+
+	eval "scp monitorResults.sh expo@${line}:${home_directory}/resilientdb/"
+
 	if [ "$ifconfig" -eq 1 ];then
 		# echo "$if_cmd"
 		$($if_cmd) &

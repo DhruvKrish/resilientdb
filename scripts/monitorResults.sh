@@ -8,14 +8,14 @@ DEV_MACHINE_IP="$1"
 touch toInflux_dummy_.out
 curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/query' --data-urlencode "q=CREATE DATABASE grafana"
 while true; do
-    echo "In monitorResults.sh"
+    echo "In monitorResults.sh" > Monitorlogs.txt
     filename=$(inotifywait --format '%w%f' -e modify toInflux_*_.out)
-    echo $filename
+    echo $filename > Monitorlogs.txt
     node=$(echo $filename | cut -f 2 -d '_')
-    echo $node
+    echo $node > Monitorlogs.txt
     IFS=','
     throughput=$(tail -1 $filename)
-    echo "tp - $throughput"
+    echo "tp - $throughput" > Monitorlogs.txt
     curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/write?db=grafana' --data-binary $node' throughput='$throughput
     done
     if test -f "toInflux_dummy_.out"; then
