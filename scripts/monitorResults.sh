@@ -5,11 +5,11 @@
 #The grafana database is used to create graphs in grafana setup in the development machine.
 #!/bin/bash
 DEV_MACHINE_IP="$1"
-touch ../toInflux_dummy_.out
+touch toInflux_dummy_.out
 curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/query' --data-urlencode "q=CREATE DATABASE grafana"
 while true; do
     echo "In monitorResults.sh"
-    filename=$(inotifywait --format '%w%f' -e modify ../toInflux_*_.out)
+    filename=$(inotifywait --format '%w%f' -e modify toInflux_*_.out)
     echo $filename
     node=$(echo $filename | cut -f 2 -d '_')
     echo $node
@@ -18,7 +18,7 @@ while true; do
     echo "tp - $throughput"
     curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/write?db=grafana' --data-binary $node' throughput='$throughput
     done
-    if test -f "../toInflux_dummy_.out"; then
-        rm ../toInflux_dummy_.out
+    if test -f "toInflux_dummy_.out"; then
+        rm toInflux_dummy_.out
     fi
 done
