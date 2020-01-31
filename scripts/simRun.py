@@ -35,6 +35,10 @@ os.system(cmd)
 machines=hostip
 mach=hostmach
 
+#	# check if monitorResults.sh processes are killed
+cmd = './vcloud_cmd.sh \"{}\" \"pkill -f \'sh monitorResults.sh\'\"'.format(' '.join(machines))
+print(cmd)
+os.system(cmd)
 #	# check all rundb/runcl are killed
 cmd = './vcloud_cmd.sh \"{}\" \"pkill -f \'rundb\'\"'.format(' '.join(machines))
 print(cmd)
