@@ -64,7 +64,10 @@ cmd = './vcloud_deploy.sh \"{}\" {} \"{}\"'.format(' '.join(machines),nds,resfil
 print(cmd)
 os.system(cmd)
 
+#	# check if monitorResults.sh processes are killed
+cmd = './vcloud_cmd.sh \"{}\" \"pkill -f \'sh monitorResults.sh\'\"'.format(' '.join(machines))
+print(cmd)
+os.system(cmd)
+
 # collecting the output
 os.system("./scp_results.sh {} {} {}".format(nds,resfile,result_dir))
-
-
