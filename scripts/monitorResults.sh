@@ -9,7 +9,7 @@ touch toInflux_dummy_.out
 curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/query' --data-urlencode "q=CREATE DATABASE grafana"
 while true; do
     echo "In monitorResults.sh" > Monitorlogs.txt
-    filename=$(inotifywait --format '%w%f' -e close,moved_to toInflux_*_.out)
+    filename=$(inotifywait --format '%w%f' -e close,moved_to,modify toInflux_*_.out)
     echo $filename > Monitorlogs.txt
     node=$(echo $filename | cut -f 2 -d '_')
     echo $node > Monitorlogs.txt
