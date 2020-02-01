@@ -5,20 +5,16 @@
 #The grafana database is used to create graphs in grafana setup in the development machine.
 #!/bin/bash
 DEV_MACHINE_IP="$1"
-touch toInflux_dummy_.out
 curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/query' --data-urlencode "q=CREATE DATABASE grafana"
 while true; do
-    echo "In monitorResults.sh" > Monitorlogs.txt
-    filename=$(inotifywait --format '%w%f' -e close,moved_to,modify toInflux_*_.out)
-    echo $filename > Monitorlogs.txt
+    echo "In monitorResults.sh"
+    filename=$(inotifywait -r --format '%f' -e modify ~/resilientdb --exclude [Ls]*)
+    echo "Change in file: "$filename
     node=$(echo $filename | cut -f 2 -d '_')
-    echo $node > Monitorlogs.txt
+    echo "Adding data to table: "$node
     IFS=','
     throughput=$(tail -1 $filename)
-    echo "tp - $throughput" > Monitorlogs.txt
+    echo "throughput = $throughput"
     curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/write?db=grafana' --data-binary $node' throughput='$throughput
     done
-    if test -f "toInflux_dummy_.out"; then
-        rm toInflux_dummy_.out
-    fi
 done
