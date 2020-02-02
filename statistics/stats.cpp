@@ -225,7 +225,7 @@ void Stats_thd::print_client(FILE *outf, bool prog)
     string filename = "toInflux_C";
     filename.append(node_id);
     filename.append("_.out");
-
+    filename="./MonitorFiles/"+filename;
     
     ofstream file;
     file.open(filename.c_str(), ios_base::out | ios_base::in);  // will not create file
@@ -772,7 +772,7 @@ void Stats_thd::print(FILE *outf, bool prog)
     string filename = "toInflux_R";
     filename.append(node_id);
     filename.append("_.out");
-    
+    filename="./MonitorFiles/"+filename;
 
     ofstream file;
     file.open(filename.c_str(), ios_base::out | ios_base::in);  // will not create file
