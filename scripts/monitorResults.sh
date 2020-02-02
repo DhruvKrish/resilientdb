@@ -14,7 +14,7 @@ while true; do
     node=$(echo $filename | cut -f 2 -d '_')
     echo "Adding data to table: "$node
     IFS=','
-    throughput=$(tail -1 $filename)
+    throughput=$(tail -1 "./MonitorFiles/"$filename)
     echo "throughput = $throughput"
     curl -i -XPOST 'http://'$DEV_MACHINE_IP':8086/write?db=grafana' --data-binary $node' throughput='$throughput
     done
