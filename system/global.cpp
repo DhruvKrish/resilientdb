@@ -64,6 +64,9 @@ UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_core_cnt = CORE_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;
 
+// new constant for shard size
+UInt32 g_shard_size = SHARD_SIZE;
+
 #if EXECUTION_THREAD
 UInt32 g_execute_thd = EXECUTE_THD_CNT;
 #else
@@ -143,13 +146,45 @@ uint64_t receivedKeys[NODE_CNT + CLIENT_NODE_CNT];
 
 /*********************************************/
 
+// method to check if node is primary in a shard
+bool is_primary_node(uint64_t thd_id, uint64_t node){
+
+	return view_to_primary(get_current_view(thd_id) ,node) == node;
+}
+
+//method to get shard number
+uint64_t get_shard_number(uint64_t i){
+	if (i >= g_node_cnt && i < g_node_cnt + g_client_node_cnt)
+    {
+        int client_number = g_node_id - g_node_cnt;
+        return (client_number % g_shard_size);
+    }
+    else
+    {
+        return (g_node_id / g_shard_size);
+    }
+}
+
+// method to get primary node
+uint64_t view_to_primary(uint64_t view, uint64_t node){
+	return get_shard_number(node) * g_shard_size + view;
+}
+
+// method to check if node is in same shard
+int is_in_same_shard(uint64_t first_id, uint64_t second_id)
+{
+    return (int)(first_id / g_shard_size) == (int)(second_id / g_shard_size);
+}
+/*********************************************/
+
 // Entities for ensuring successful key exchange.
 std::mutex keyMTX;
 bool keyAvail = false;
 uint64_t totKey = 0;
 
 uint64_t indexSize = 2 * g_client_node_cnt * g_inflight_max;
-uint64_t g_min_invalid_nodes = (g_node_cnt - 1) / 3; //min number of valid nodes
+//Number of invalid/faulty nodes
+uint64_t g_min_invalid_nodes = (g_shard_size - 1) / 2;
 
 // Funtion to calculate hash of a string.
 string calculateHash(string str)
