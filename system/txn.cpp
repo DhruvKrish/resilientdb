@@ -443,6 +443,11 @@ void TxnManager::send_pbft_prep_msgs()
         {
             continue;
         }
+        // added for sharding
+        if (!is_in_same_shard(i, g_node_id))
+        {
+            continue;
+        }
         dest.push_back(i);
     }
 
@@ -471,6 +476,12 @@ void TxnManager::send_pbft_commit_msgs()
     for (uint64_t i = 0; i < g_node_cnt; i++)
     {
         if (i == g_node_id)
+        {
+            continue;
+        }
+
+        // added for sharding
+        if (!is_in_same_shard(i, g_node_id))
         {
             continue;
         }
