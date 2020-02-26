@@ -892,10 +892,10 @@ RC WorkerThread::process_execute_msg(Message *msg)
     // Execute the transaction
     txn_man->run_txn();
 
- #if ENABLE_CHAIN
+#if ENABLE_CHAIN
     // Add the block to the blockchain.
     BlockChain->add_block(txn_man);
- #endif
+#endif
 
     // Commit the results.
     txn_man->commit();
@@ -1005,11 +1005,12 @@ RC WorkerThread::process_pbft_chkpt_msg(Message *msg)
         release_txn_man(i, 0);
         inc_last_deleted_txn();
 
-       #if ENABLE_CHAIN	
-	if((i+1) % get_batch_size() == 0) {
-	    BlockChain->remove_block(i);
-	}	
-       #endif
+#if ENABLE_CHAIN
+        if ((i + 1) % get_batch_size() == 0)
+        {
+            BlockChain->remove_block(i);
+        }
+#endif
     }
 
 #if VIEW_CHANGES
@@ -1215,13 +1216,20 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         {
             continue;
         }
+
+        // added for sharding
+        if (!is_in_same_shard(i, g_node_id))
+        {
+            continue;
+        }
+        // end
         breq->sign(i);
         tman->allsign.push_back(breq->signature); // Redundant
         emptyvec.push_back(breq->signature);
     }
 
-    // Send the BatchRequests message to all the other replicas.
-    vector<uint64_t> dest = nodes_to_send(0, g_node_cnt);
+    // Send the BatchRequests message to all the other replicas in the same shard.
+    vector<uint64_t> dest = nodes_to_send(g_node_id, g_node_id + g_shard_size);
     msg_queue.enqueue(get_thd_id(), breq, emptyvec, dest);
     emptyvec.clear();
 }
