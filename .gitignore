@@ -1,7 +1,6 @@
 deps/*/
 .idea/
 .vscode/
-rsync.sh
 ifconfig.txt
 obj/
 results/
