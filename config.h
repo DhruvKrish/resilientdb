@@ -1,7 +1,10 @@
 #ifndef _CONFIG_H_ 
 #define _CONFIG_H_ 
 // Specify the number of servers or replicas 
-#define NODE_CNT 4
+// New constant for shard size
+#define SHARD_SIZE 4
+// Make node count to 8, 4 per shard
+#define NODE_CNT 8
 // Number of worker threads at primary. For RBFT (6) and other algorithms (5). 
 #define THREAD_CNT 5 
 #define REM_THREAD_CNT 3
@@ -9,7 +12,8 @@
 #define CORE_CNT 8 
 #define PART_CNT 1 
 // Specify the number of clients. 
-#define CLIENT_NODE_CNT 1
+// Make client count to 2. 1 per shard
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 2 
 #define CLIENT_REM_THREAD_CNT 1 
 #define CLIENT_SEND_THREAD_CNT 1 
