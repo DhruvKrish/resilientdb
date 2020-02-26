@@ -248,7 +248,7 @@ void Message::mcopy_to_buf(char *buf)
 	COPY_BUF(buf, lat_cc_time, ptr);
 	COPY_BUF(buf, lat_process_time, ptr);
 	lat_network_time = get_sys_clock();
-	
+
 	//printf("mtobuf %ld: %f, %f\n",txn_id,lat_network_time,lat_other_time);
 	COPY_BUF(buf, lat_network_time, ptr);
 	COPY_BUF(buf, lat_other_time, ptr);
@@ -1233,7 +1233,8 @@ uint64_t BatchRequests::get_size()
 void BatchRequests::init(uint64_t thd_id)
 {
 	// Only primary should create this message
-	assert(get_current_view(thd_id) == g_node_id);
+	// Change assert for sharding
+	assert(is_primary_node(0, g_node_id));
 	this->view = get_current_view(thd_id);
 
 	this->index.init(get_batch_size());
