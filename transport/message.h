@@ -157,8 +157,8 @@ public:
     uint64_t client_startts;
     uint64_t first_startts;
     Array<uint64_t> partitions;
-    bool inter_shard_flag;
-    Array<uint64_t> shards_involved;
+    //bool inter_shard_flag;
+    //Array<uint64_t> shards_involved;
 };
 
 class YCSBClientQueryMessage : public ClientQueryMessage
