@@ -192,13 +192,11 @@ RC ClientThread::run()
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
 
-		/*
 		//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
 		clqry->inter_shard_flag=true;
 		//All requests are shard transactions between shard numbers 1 and 2
 		clqry->shards_involved.add(0);
 		clqry->shards_involved.add(1);
-		*/
 
 		bmsg->cqrySet.add(clqry);
 		addMore++;
