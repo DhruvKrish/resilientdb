@@ -12,13 +12,19 @@ bsize=$3	# Argumnet 3 to script --> Batch Size
 
 
 SNODES=(
-# Specify private IP addresses of your replicas (as below).
-#"10.128.0.246"
+"10.128.0.5"
+"10.128.0.7"
+"10.128.0.10"
+"10.128.0.14"
+"10.128.0.16"
+"10.128.0.18"
+"10.128.0.19"
+"10.128.0.21"
 )
 
 CNODES=(
-# Specify Private IPs of your clients. 
-#"10.128.1.6"
+"10.128.0.22"
+"10.128.0.23"
 )
 
 
