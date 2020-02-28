@@ -180,6 +180,11 @@ public:
     string getRequestString();
 
     Array<ycsb_request *> requests;
+
+    //This ClientQuery Message is a cross-shard transacton if inter_shard_flag is set
+    bool inter_shard_flag;
+    //List of shards involved in the cross-shard transaction
+    Array<uint64_t> shards_involved;
 };
 
 class ClientResponseMessage : public Message

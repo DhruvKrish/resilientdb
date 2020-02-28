@@ -452,6 +452,10 @@ uint64_t YCSBClientQueryMessage::get_size()
 	size += sizeof(ycsb_request) * requests.size();
 	size += sizeof(return_node);
 
+	//Add shard request information to the message size
+	size += sizeof(inter_shard_flag);
+	size += sizeof(uint64_t) * shards_involved.size();
+
 	return size;
 }
 
