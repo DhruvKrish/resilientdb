@@ -562,6 +562,8 @@ uint64_t ClientQueryMessage::get_size()
 	size += sizeof(client_startts);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * partitions.size();
+	size += sizeof(inter_shard_flag);
+	size += sizeof(uint64_t) * shards_involved.size();
 	return size;
 }
 
