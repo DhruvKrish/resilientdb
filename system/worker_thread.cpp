@@ -1174,23 +1174,23 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         init_txn_man(msg->cqrySet[i]);
 
         //Check if inter_shard_flag is set
-        if(msg->cqrySet[i]->inter_shard_flag){
+        /* if(msg->cqrySet[i]->inter_shard_flag){
             cout<<"Inter Shard Flag set\n";
             fflush(stdout);
-        }
+        } */
 
         //Print shard list
-        cout<<"List of shards in transaction ID:"<<txn_id<<"\n";
+        /* cout<<"List of shards in transaction ID:"<<txn_id<<"\n";
         fflush(stdout);
         for(uint64_t j=0;j<msg->cqrySet[i]->shards_involved.size();j++){
             cout<<msg->cqrySet[i]->shards_involved[j]<<"\n";
             fflush(stdout);
-        }
+        } */
 
-        if(msg->cqrySet[i]->shards_involved.size()==0){
+        /* if(msg->cqrySet[i]->shards_involved.size()==0){
             cout<<"No shards in list\n";
             fflush(stdout);
-        }
+        } */
 
 
         // Append string representation of this txn.
