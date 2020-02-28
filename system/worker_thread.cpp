@@ -1182,7 +1182,7 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         //Print shard list
         cout<<"List of shards in transaction ID:"<<txn_id<<"\n";
         fflush(stdout);
-        for(int j=0;j<msg->cqrySet[i]->shards_involved.size();j++){
+        for(uint64_t j=0;j<msg->cqrySet[i]->shards_involved.size();j++){
             cout<<msg->cqrySet[i]->shards_involved[j]<<"\n";
             fflush(stdout);
         }
