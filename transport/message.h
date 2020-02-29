@@ -157,7 +157,7 @@ public:
     uint64_t client_startts;
     uint64_t first_startts;
     Array<uint64_t> partitions;
-    //bool inter_shard_flag;
+    //bool cross_shard_txn;
     //Array<uint64_t> shards_involved;
 };
 
@@ -181,8 +181,8 @@ public:
 
     Array<ycsb_request *> requests;
 
-    //This ClientQuery Message is a cross-shard transacton if inter_shard_flag is set
-    bool inter_shard_flag;
+    //This ClientQuery Message is a cross-shard transacton if cross_shard_txn is set
+    bool cross_shard_txn;
     //List of shards involved in the cross-shard transaction
     Array<uint64_t> shards_involved;
 };

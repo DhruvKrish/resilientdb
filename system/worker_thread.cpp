@@ -1173,8 +1173,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 
         init_txn_man(msg->cqrySet[i]);
 
-        //Check if inter_shard_flag is set
-        /* if(msg->cqrySet[i]->inter_shard_flag){
+        //Check if cross_shard_txn is set
+        /* if(msg->cqrySet[i]->cross_shard_txn){
             cout<<"Inter Shard Flag set\n";
             fflush(stdout);
         } */

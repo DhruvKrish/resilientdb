@@ -452,7 +452,7 @@ uint64_t YCSBClientQueryMessage::get_size()
 	size += sizeof(ycsb_request) * requests.size();
 	size += sizeof(return_node);
 	//Add shard request information to the message size
-	size += sizeof(inter_shard_flag);
+	size += sizeof(cross_shard_txn);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * shards_involved.size();
 
@@ -498,7 +498,7 @@ void YCSBClientQueryMessage::copy_from_buf(char *buf)
 		requests.add(req);
 	}
 
-	COPY_VAL(inter_shard_flag, buf, ptr);
+	COPY_VAL(cross_shard_txn, buf, ptr);
 	size_t sizeOfShards;
 	COPY_VAL(sizeOfShards, buf, ptr);
 	shards_involved.init(sizeOfShards);
@@ -528,7 +528,7 @@ void YCSBClientQueryMessage::copy_to_buf(char *buf)
 	}
 
 	//Copy sharding related flag and array to buffer
-	COPY_BUF(buf, inter_shard_flag, ptr);
+	COPY_BUF(buf, cross_shard_txn, ptr);
 	size_t sizeOfShards = shards_involved.size();
 	//cout<<"Size of shard: "<<sizeOfShards<<endl;
 	COPY_BUF(buf, sizeOfShards, ptr);
@@ -587,7 +587,7 @@ uint64_t ClientQueryMessage::get_size()
 	size += sizeof(client_startts);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * partitions.size();
-	//size += sizeof(inter_shard_flag);
+	//size += sizeof(cross_shard_txn);
 	//size += sizeof(uint64_t) * shards_involved.size();
 	return size;
 }
