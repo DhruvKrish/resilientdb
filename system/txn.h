@@ -21,6 +21,10 @@ public:
     void reset(uint64_t pool_id);
     void release(uint64_t pool_id);
     txnid_t txn_id;
+    //Flag to check if transacation is cross sharded
+    bool cross_shard_txn;
+    //List of shards involved in the transaction
+    Array<uint64_t> shards_involved;
     uint64_t batch_id;
     RC rc;
 };
@@ -95,6 +99,14 @@ public:
     Workload *get_wl();
     void set_txn_id(txnid_t txn_id);
     txnid_t get_txn_id();
+    //set cross_shard_txn flag
+    void set_cross_shard_txn();
+    //check if cross_shard_txn flag is set
+    bool get_cross_shard_txn();
+    //set shards_involved array
+    void set_shards_involved(Array<uint64_t> *shardList);
+    //get shards_involved array
+    Array<uint64_t> get_shards_involved();
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();

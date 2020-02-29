@@ -267,6 +267,25 @@ txnid_t TxnManager::get_txn_id()
     return txn->txn_id;
 }
 
+//set cross_shard_txn flag
+void TxnManager::set_cross_shard_txn(){
+    txn->cross_shard_txn=true;
+}
+
+//check if cross_shard_txn flag is set
+bool TxnManager::get_cross_shard_txn(){
+    return txn->cross_shard_txn;
+}
+
+//set shards_involved array
+void TxnManager::set_shards_involved(Array<uint64_t> *shardList){
+
+}
+
+Array<uint64_t> TxnManager::get_shards_involved(){
+
+}
+
 Workload *TxnManager::get_wl()
 {
     return h_wl;
