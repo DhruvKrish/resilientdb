@@ -103,13 +103,24 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case EXECUTE_MSG:
+        {
         //Checking if request originated from client and whether it is a cross shard transaction
-        if((txn_man->return_id - g_node_cnt > 0) && (txn_man->get_cross_shard_txn))
+        cout<< "In Execute:"<<endl;
+        cout<< "ID of node request originated from:"<<endl;
+        cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
+        Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
+        cout<<"Shards Involeved list : "<<endl;
+        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
+        {
+        cout<<shards_involved_in_txn[i]<<endl;
+        }
+        
+        if((txn_man->return_id - g_node_cnt > 0) && (txn_man->get_cross_shard_txn()))
         {
            //Array<uint64_t> shards_to_send = get_shards_involved();
            //create and send PREPARE_2PC_REQ message to the shards involved
         }
-        else if(txn_man->get_cross_shard_txn) ////If current node is in one of the involved shards
+        else if(txn_man->get_cross_shard_txn()) ////If current node is in one of the involved shards
         {
             //create and send Prepare yes or no message
         }
@@ -117,11 +128,13 @@ void WorkerThread::process(Message *msg)
         {
         rc = process_execute_msg(msg);
         }
+
         break;
-    case REQUEST_2PC:
+        }
+    //case REQUEST_2PC:
         //cout << "Request 2PC message recieved" << endl;
         //rc = process_request_2pc_msg(msg);
-        break;
+      //  break;
         
 #if VIEW_CHANGES
     case VIEW_CHANGE:
