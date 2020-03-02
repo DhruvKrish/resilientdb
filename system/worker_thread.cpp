@@ -105,6 +105,11 @@ void WorkerThread::process(Message *msg)
     case EXECUTE_MSG:
         rc = process_execute_msg(msg);
         break;
+    case REQUEST_2PC:
+        /*
+        rc = process_request_2pc_msg(msg);
+        break;
+        */
 #if VIEW_CHANGES
     case VIEW_CHANGE:
         rc = process_view_change_msg(msg);
@@ -837,6 +842,14 @@ RC WorkerThread::process_execute_msg(Message *msg)
         //fflush(stdout);
 
         TxnManager *tman = get_transaction_manager(i, 0);
+
+
+        if((tman->return_id - g_node_cnt > 0) && (tman->get_cross_shard_txn))
+        {
+           //Array<uint64_t> shards_to_send = get_shards_involved();
+
+            //create and send PREPARE_2PC_REQ message to the shards involved
+        }
 
         inc_next_index();
 
