@@ -103,13 +103,27 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case EXECUTE_MSG:
+        //Checking if request originated from client and whether it is a cross shard transaction
+        if((txn_man->return_id - g_node_cnt > 0) && (txn_man->get_cross_shard_txn))
+        {
+           //Array<uint64_t> shards_to_send = get_shards_involved();
+           //create and send PREPARE_2PC_REQ message to the shards involved
+        }
+        else if(txn_man->get_cross_shard_txn) ////If current node is in one of the involved shards
+        {
+            //create and send Prepare yes or no message
+        }
+        else //regular execution of transactions
+        {
         rc = process_execute_msg(msg);
+        }
+        
         break;
     case REQUEST_2PC:
-        /*
-        rc = process_request_2pc_msg(msg);
+        //cout << "Request 2PC message recieved" << endl;
+        //rc = process_request_2pc_msg(msg);
         break;
-        */
+        
 #if VIEW_CHANGES
     case VIEW_CHANGE:
         rc = process_view_change_msg(msg);
@@ -843,13 +857,6 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
         TxnManager *tman = get_transaction_manager(i, 0);
 
-
-        if((tman->return_id - g_node_cnt > 0) && (tman->get_cross_shard_txn))
-        {
-           //Array<uint64_t> shards_to_send = get_shards_involved();
-
-            //create and send PREPARE_2PC_REQ message to the shards involved
-        }
 
         inc_next_index();
 

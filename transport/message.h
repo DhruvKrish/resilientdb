@@ -188,7 +188,7 @@ public:
 };
 
 
-class Request2PCMessage : public ClientQueryMessage
+/*class Request2PCMessage : public ClientQueryMessage
 {
 public:
     void copy_from_buf(char *buf);
@@ -211,7 +211,7 @@ public:
     //To inform the shards that it is a cross shard transaction
     bool cross_shard_txn;
     
-};
+};*/
 
 class ClientResponseMessage : public Message
 {
