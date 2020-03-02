@@ -103,6 +103,8 @@ public:
     void set_cross_shard_txn();
     //check if cross_shard_txn flag is set
     bool get_cross_shard_txn();
+    //Initialize list of shards involved in the transaction with a capacity
+    void init_shards_involved(uint64_t capacity);
     //Add a shard to the list of shards involved in the transaction
     void set_shards_involved(uint64_t shard_number);
     //get shards_involved array

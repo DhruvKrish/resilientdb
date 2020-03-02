@@ -111,6 +111,7 @@ void Transaction::init()
 {
     txn_id = UINT64_MAX;
     batch_id = UINT64_MAX;
+    cross_shard_txn=false;
 
     reset(0);
 }
@@ -181,6 +182,8 @@ void TxnManager::release(uint64_t pool_id)
     qry_pool.put(pool_id, query);
     query = NULL;
     txn_pool.put(pool_id, txn);
+    //Release shard list array
+    txn->shards_involved.release();
     txn = NULL;
 
     txn_ready = true;
@@ -275,6 +278,11 @@ void TxnManager::set_cross_shard_txn(){
 //check if cross_shard_txn flag is set
 bool TxnManager::get_cross_shard_txn(){
     return txn->cross_shard_txn;
+}
+
+//Initialize list of shards involved in the transaction with a capacity
+void TxnManager::init_shards_involved(uint64_t capacity){
+    txn->shards_involved.init(capacity);
 }
 
 //Add a shard to the list of shards involved in the transaction
