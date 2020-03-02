@@ -103,8 +103,8 @@ public:
     void set_cross_shard_txn();
     //check if cross_shard_txn flag is set
     bool get_cross_shard_txn();
-    //set shards_involved array
-    void set_shards_involved(Array<uint64_t> *shardList);
+    //Add a shard to the list of shards involved in the transaction
+    void set_shards_involved(uint64_t shard_number);
     //get shards_involved array
     Array<uint64_t> get_shards_involved();
     void set_query(BaseQuery *qry);

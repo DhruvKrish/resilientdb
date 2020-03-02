@@ -277,13 +277,13 @@ bool TxnManager::get_cross_shard_txn(){
     return txn->cross_shard_txn;
 }
 
-//set shards_involved array
-void TxnManager::set_shards_involved(Array<uint64_t> *shardList){
-
+//Add a shard to the list of shards involved in the transaction
+void TxnManager::set_shards_involved(uint64_t shard_number){
+    txn->shards_involved.add(shard_number);
 }
 
 Array<uint64_t> TxnManager::get_shards_involved(){
-
+    return txn->shards_involved;
 }
 
 Workload *TxnManager::get_wl()
