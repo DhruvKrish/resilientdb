@@ -441,6 +441,8 @@ void YCSBClientQueryMessage::release()
 		}
 	}
 	requests.release();
+	// Release shards
+	shards_involved.release();
 }
 
 uint64_t YCSBClientQueryMessage::get_size()
@@ -462,12 +464,16 @@ uint64_t YCSBClientQueryMessage::get_size()
 void YCSBClientQueryMessage::copy_from_query(BaseQuery *query)
 {
 	ClientQueryMessage::copy_from_query(query);
+	// Following similar implementation as ClientQueryMessage::copy_from_query
+	shards_involved.clear();
 	requests.copy(((YCSBQuery *)(query))->requests);
 }
 
 void YCSBClientQueryMessage::copy_from_txn(TxnManager *txn)
 {
 	ClientQueryMessage::mcopy_from_txn(txn);
+	// Following similar implementation as ClientQueryMessage::copy_from_query
+	shards_involved.clear();
 	requests.copy(((YCSBQuery *)(txn->query))->requests);
 }
 
