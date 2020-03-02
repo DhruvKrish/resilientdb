@@ -187,6 +187,32 @@ public:
     Array<uint64_t> shards_involved;
 };
 
+
+class Request2PCMessage : public ClientQueryMessage
+{
+public:
+    void copy_from_buf(char *buf);
+    void copy_to_buf(char *buf);
+    void copy_from_query(BaseQuery *query);
+    void copy_from_txn(TxnManager *txn);
+    void copy_to_txn(TxnManager *txn);
+    uint64_t get_size();
+    void init();
+    void release();
+    YCSBClientQueryMessage();
+    ~YCSBClientQueryMessage();
+
+    uint64_t return_node; // node that send this message.
+    string getString();
+    string getRequestString();
+
+    Array<ycsb_request *> requests;
+
+    //To inform the shards that it is a cross shard transaction
+    bool cross_shard_txn;
+    
+};
+
 class ClientResponseMessage : public Message
 {
 public:
