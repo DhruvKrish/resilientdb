@@ -117,7 +117,6 @@ void WorkerThread::process(Message *msg)
         {
         rc = process_execute_msg(msg);
         }
-        
         break;
     case REQUEST_2PC:
         //cout << "Request 2PC message recieved" << endl;
