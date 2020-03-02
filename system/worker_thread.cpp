@@ -103,6 +103,20 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case EXECUTE_MSG:
+        {
+        cout<< "In Execute:"<<endl;
+        TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+        if(txn_man->return_id >= g_node_cnt){
+        cout<< "Client request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
+        }
+        cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
+        Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
+        cout<<"Shards Involved list : "<<endl;
+        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
+        {
+        cout<<shards_involved_in_txn[i]<<endl;
+        }
+        }
         rc = process_execute_msg(msg);
         break;
 #if VIEW_CHANGES
