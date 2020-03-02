@@ -225,7 +225,7 @@ RC ClientThread::run()
 			vector<uint64_t> dest;
 
 			//next_node_id should be the primary of the reference committee (assumed to be first shard)
-			next_node_id = view_to_primary(get_view(),0); //Passing node 0 as it is in the first shard
+			//next_node_id = view_to_primary(get_view(),0); //Passing node 0 as it is in the first shard
 			dest.push_back(next_node_id);
 			msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
 			dest.clear();
@@ -265,7 +265,7 @@ void ClientThread::resend_msg(ClientQueryBatch *symsg)
 		dest.push_back(j);
 
 		Message *deepCMsg = deep_copy_msg(buf, symsg);
-		copy_to_buf(get_thd_id(), deepCMsg, emptyvec, dest);
+		msg_queue.enqueue(get_thd_id(), deepCMsg, emptyvec, dest);
 		dest.clear();
 	}
 	emptyvec.clear();

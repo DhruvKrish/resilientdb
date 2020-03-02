@@ -771,6 +771,17 @@ void WorkerThread::init_txn_man(YCSBClientQueryMessage *clqry)
 {
     txn_man->client_id = clqry->return_node;
     txn_man->client_startts = clqry->client_startts;
+    //Check if request is a cross shard transaction
+    if(clqry->cross_shard_txn){
+        //Set cross shard transaction bool of transaction
+        txn_man->set_cross_shard_txn();
+        //Initialize shard list with size of shard list in message
+        txn_man->init_shards_involved(clqry->shards_involved.size());
+        //Copy transaction list from message to transaction in TxnManager
+        for(uint64_t i=0;i<clqry->shards_involved.size();i++){
+            txn_man->set_shards_involved(clqry->shards_involved.get(i));
+        }
+    }
 
     YCSBQuery *query = (YCSBQuery *)(txn_man->query);
     for (uint64_t i = 0; i < clqry->requests.size(); i++)

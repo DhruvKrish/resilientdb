@@ -182,8 +182,8 @@ void TxnManager::release(uint64_t pool_id)
     qry_pool.put(pool_id, query);
     query = NULL;
     txn_pool.put(pool_id, txn);
-    //Release shard list array
-    txn->shards_involved.release();
+    //Release shard list array if transaction was cross sharded
+    if(get_cross_shard_txn())txn->shards_involved.release();
     txn = NULL;
 
     txn_ready = true;
