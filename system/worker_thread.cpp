@@ -106,11 +106,11 @@ void WorkerThread::process(Message *msg)
         {
         //Checking if request originated from client and whether it is a cross shard transaction
         cout<< "In Execute:"<<endl;
-        cout<< "ID of node request originated from:"<<endl;
+        cout<< "ID of node request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
         cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
         Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
-        cout<<"Shards Involeved list : "<<endl;
-        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
+        cout<<"Shards Involved list : "<<endl;
+        for (uint64_t i=0; i<shards_involved_in_txn.size(); i++)
         {
         cout<<shards_involved_in_txn[i]<<endl;
         }
