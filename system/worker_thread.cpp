@@ -104,8 +104,11 @@ void WorkerThread::process(Message *msg)
         break;
     case EXECUTE_MSG:
         {
-        cout<< "In Execute:"<<endl;
         TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+        /*
+        //Verifying that sharding information is persisted in Txn manager
+        cout<< "In Execute:"<<endl;
+        
         if(txn_man->return_id >= g_node_cnt){
         cout<< "Client request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
         }
@@ -116,9 +119,40 @@ void WorkerThread::process(Message *msg)
         {
         cout<<shards_involved_in_txn[i]<<endl;
         }
+        */
+        Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+
+        //if Request orginated form client and it is a cross shard transaction (current node can only be reference commitee)
+        if((txn_man->return_id > g_node_cnt) && (txn_man->get_cross_shard_txn()))
+        {
+           //create and send PREPARE_2PC_REQ message to the shards involved
         }
+        //If current node is reference commitee & request originated from another shard
+        else if(g_node_id < g_shard_size && txn_man->return_id>=g_shard_size && txn_man->return_id<g_node_cnt) 
+        {
+            //create and send global commit/abort to shards involved
+            
+            //if ref committee also part of shards involved, then execute
+            for ( uint64_t i =0; i<shardsInvolved.size();i++)
+            {
+                if(shardsInvolved[i]==0)
+                {
+                   rc = process_execute_msg(msg); 
+                   break;
+                }
+            }
+        }
+        //if current node is in of the shards involved and request originated from Ref. commitee:
+        else if(g_node_id>g_shard_size and g_node_id<g_node_cnt and txn_man->return_id < g_shard_size)
+        {
+            //create and send Vote_2PC
+        }
+        else //Intra shard : regular Execution
+        {
         rc = process_execute_msg(msg);
+        }
         break;
+        }
 #if VIEW_CHANGES
     case VIEW_CHANGE:
         rc = process_view_change_msg(msg);
