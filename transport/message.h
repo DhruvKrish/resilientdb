@@ -240,6 +240,21 @@ class Request_2PCBatch : public ClientQueryBatch
 
 };
 
+class Vote_2PC : public ClientQueryBatch
+{
+
+};
+
+class Commit_2PC : public ClientQueryBatch
+{
+
+};
+
+class Abort_2PC : public ClientQueryBatch
+{
+
+};
+
 
 class QueryMessage : public Message
 {

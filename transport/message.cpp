@@ -123,6 +123,15 @@ Message *Message::create_message(RemReqType rtype)
 	case REQUEST_2PC:
 		msg = new Request_2PCBatch;
 		break;
+	case VOTE_2PC:
+		msg = new Vote_2PC;
+		break;
+	case COMMIT_2PC:
+		msg = new Commit_2PC;
+		break;
+	case ABORT_2PC:
+		msg = new Abort_2PC;
+		break;
 
 #if VIEW_CHANGES == true
 	case VIEW_CHANGE:
