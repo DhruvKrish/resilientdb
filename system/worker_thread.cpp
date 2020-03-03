@@ -126,6 +126,7 @@ void WorkerThread::process(Message *msg)
         if((txn_man->return_id > g_node_cnt) && (txn_man->get_cross_shard_txn()))
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
+           create_and_send_PREPARE_2PC(msg);
         }
         //If current node is reference commitee & request originated from another shard
         else if(g_node_id < g_shard_size && txn_man->return_id>=g_shard_size && txn_man->return_id<g_node_cnt) 
@@ -174,6 +175,21 @@ void WorkerThread::process(Message *msg)
         break;
     }
 }
+
+
+RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
+{
+  
+    Message *mssg = Message::create_message(REQUEST_2PC);
+    Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
+	rmsg->init();
+
+    return RCOK;  
+}
+
+
+
+
 
 RC WorkerThread::process_key_exchange(Message *msg)
 {
