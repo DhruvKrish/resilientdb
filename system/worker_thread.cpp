@@ -134,13 +134,9 @@ void WorkerThread::process(Message *msg)
             //create and send global commit/abort to shards involved
             
             //if ref committee also part of shards involved, then execute
-            for ( uint64_t i =0; i<shardsInvolved.size();i++)
+            if(shardsInvolved.contains(0))
             {
-                if(shardsInvolved[i]==0)
-                {
-                   rc = process_execute_msg(msg); 
-                   break;
-                }
+            rc = process_execute_msg(msg); 
             }
         }
         //if current node is in of the shards involved and request originated from Ref. commitee:
@@ -183,6 +179,31 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     Message *mssg = Message::create_message(REQUEST_2PC);
     Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
 	rmsg->init();
+
+    TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+
+    //Array<YCSBClientQueryMessage *> client_query_set = txn_man->batchreq->requestMsg;
+
+    //add signing to rmsg
+    //rmsg -> sign(pass destination)
+    vector<string> emptyvec;
+	//populate emptyvec
+    //emptyvec.push_back(rmsg->signature);
+
+	vector<uint64_t> dest;
+
+    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+
+    for (uint64_t i=0; i<shardsInvolved.size(); i++)
+        {
+            for(uint64_t j=shardsInvolved[i]; j<shardsInvolved[i]+g_shard_size; j++)
+            {
+                dest.push_back(j);
+            }               
+        }
+    //enqueue to msg_queue
+	//msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
+	dest.clear();
 
     return RCOK;  
 }
