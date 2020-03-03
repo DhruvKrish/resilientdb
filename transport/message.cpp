@@ -120,6 +120,9 @@ Message *Message::create_message(RemReqType rtype)
 	case BATCH_REQ:
 		msg = new BatchRequests;
 		break;
+	case REQUEST_2PC:
+		msg = new Request_2PCBatch;
+		break;
 
 #if VIEW_CHANGES == true
 	case VIEW_CHANGE:

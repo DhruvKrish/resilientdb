@@ -235,6 +235,12 @@ public:
 };
 #endif
 
+class Request_2PCBatch : public ClientQueryBatch
+{
+
+};
+
+
 class QueryMessage : public Message
 {
 public:

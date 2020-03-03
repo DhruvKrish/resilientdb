@@ -204,7 +204,8 @@ enum RemReqType
 
     PBFT_PREP_MSG,   // Prepare
     PBFT_COMMIT_MSG, // Commit
-    PBFT_CHKPT_MSG   // Checkpoint and Garbage Collection
+    PBFT_CHKPT_MSG,  // Checkpoint and Garbage Collection
+    REQUEST_2PC  //Request message for 2PC (sent by Primary during AHL)
 
 };
 
