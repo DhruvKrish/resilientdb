@@ -164,6 +164,9 @@ void WorkerThread::process(Message *msg)
     case PBFT_COMMIT_MSG:
         rc = process_pbft_commit_msg(msg);
         break;
+    case REQUEST_2PC:
+        cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
+        break;
     default:
         printf("Msg: %d\n", msg->get_rtype());
         fflush(stdout);
@@ -182,10 +185,15 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 
     TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
 
-    //Array<YCSBClientQueryMessage *> client_query_set = txn_man->batchreq->requestMsg;
+    /*vector<YCSBClientQueryMessage *> batch_cqryset = txn_man->batchreq->requestMsg;
+
+    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    {
+        rmsg->cqrySet.add(txn_man->batchreq->requestMsg[i]);
+    } */
 
     //add signing to rmsg
-    //rmsg -> sign(pass destination)
+    //rmsg -> sign(4);
     vector<string> emptyvec;
 	//populate emptyvec
     //emptyvec.push_back(rmsg->signature);
@@ -196,13 +204,18 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 
     for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
-            for(uint64_t j=shardsInvolved[i]; j<shardsInvolved[i]+g_shard_size; j++)
+            if(shardsInvolved[i]==0)//to make sure reference comittee doesnt send to itself
             {
-                dest.push_back(j);
-            }               
+                continue;
+            }
+            
+            for(uint64_t j=shardsInvolved[i]; j<shardsInvolved[i]+g_shard_size; j++)
+                {
+                    dest.push_back(j);
+                }              
         }
     //enqueue to msg_queue
-	//msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
+	//msg_queue.enqueue(get_thd_id(), rmsg, emptyvec, dest);
 	dest.clear();
 
     return RCOK;  
@@ -1363,7 +1376,6 @@ bool WorkerThread::validate_msg(Message *msg)
             assert(0);
         }
         break;
-
     case CL_BATCH:
         if (!((ClientQueryBatch *)msg)->validate())
         {
