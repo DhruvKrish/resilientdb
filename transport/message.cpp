@@ -1140,11 +1140,27 @@ uint64_t ClientQueryBatch::get_size()
 	return size;
 }
 
+uint64_t Request_2PCBatch::get_size()
+{
+	uint64_t size = ClientQueryBatch::get_size();
+
+	size += sizeof(rc_txn_id);
+
+	return size;
+}
+
+
 void ClientQueryBatch::init()
 {
 	this->return_node = g_node_id;
 	this->batch_size = get_batch_size();
 	this->cqrySet.init(get_batch_size());
+}
+
+void Request_2PCBatch::init(uint64_t ref_txn_id)
+{
+	ClientQueryBatch::init();
+	this->rc_txn_id = ref_txn_id;
 }
 
 void ClientQueryBatch::release()
@@ -1183,6 +1199,16 @@ void ClientQueryBatch::copy_from_buf(char *buf)
 		cqrySet.add((YCSBClientQueryMessage *)msg);
 	}
 
+	
+	assert(ptr == get_size());
+}
+
+void Request_2PCBatch::copy_from_buf(char *buf)
+{
+	ClientQueryBatch::copy_from_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_VAL(rc_txn_id, buf, ptr);
+
 	assert(ptr == get_size());
 }
 
@@ -1203,6 +1229,15 @@ void ClientQueryBatch::copy_to_buf(char *buf)
 	assert(ptr == get_size());
 }
 
+void Request_2PCBatch::copy_to_buf(char *buf)
+{
+	ClientQueryBatch::copy_to_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_BUF(buf, rc_txn_id, ptr);
+
+	assert(ptr == get_size());
+}
+
 string ClientQueryBatch::getString()
 {
 	string message = std::to_string(this->return_node);
@@ -1213,6 +1248,8 @@ string ClientQueryBatch::getString()
 
 	return message;
 }
+
+
 
 void ClientQueryBatch::sign(uint64_t dest_node)
 {

@@ -179,18 +179,20 @@ void WorkerThread::process(Message *msg)
 RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 {
   
-    Message *mssg = Message::create_message(REQUEST_2PC);
-    Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
-	rmsg->init();
+    //Message *mssg = Message::create_message(REQUEST_2PC);
+    //Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
+    
+    //getting last transaction
+    ExecuteMessage *emsg = (ExecuteMessage *)msg;
 
-    TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+    TxnManager *txn_man = get_transaction_manager(emsg->end_index-1, 0);
 
-    /*vector<YCSBClientQueryMessage *> batch_cqryset = txn_man->batchreq->requestMsg;
+    //rmsg->init(emsg->index);
 
-    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    /*for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
         rmsg->cqrySet.add(txn_man->batchreq->requestMsg[i]);
-    } */
+    }*/
 
     //add signing to rmsg
     //rmsg -> sign(4);
