@@ -241,8 +241,7 @@ public:
     void copy_from_buf(char *buf);
     void copy_to_buf(char *buf);
     uint64_t get_size();
-    void init(uint64_t ref_txn_id);  
-    
+        
     uint64_t rc_txn_id;
 };
 

@@ -1157,11 +1157,6 @@ void ClientQueryBatch::init()
 	this->cqrySet.init(get_batch_size());
 }
 
-void Request_2PCBatch::init(uint64_t ref_txn_id)
-{
-	ClientQueryBatch::init();
-	this->rc_txn_id = ref_txn_id;
-}
 
 void ClientQueryBatch::release()
 {

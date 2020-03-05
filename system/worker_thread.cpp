@@ -179,32 +179,37 @@ void WorkerThread::process(Message *msg)
 RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 {
   
-    //Message *mssg = Message::create_message(REQUEST_2PC);
-    //Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
+    Message *mssg = Message::create_message(REQUEST_2PC);
+    Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
+    rmsg->init();
     
     //getting last transaction
     ExecuteMessage *emsg = (ExecuteMessage *)msg;
+    rmsg->rc_txn_id = emsg->index;
 
-    TxnManager *txn_man = get_transaction_manager(emsg->end_index-1, 0);
+    cout<<"Txn Id of last txn:"<<emsg->end_index<<endl;
 
-    //rmsg->init(emsg->index);
 
-    /*for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
+    
+    cout<<"size :: "<<txn_man->batchreq->requestMsg.size()<<endl;
+
+    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
-        rmsg->cqrySet.add(txn_man->batchreq->requestMsg[i]);
-    }*/
+        rmsg->cqrySet.add((YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i]);
+    }
 
     //add signing to rmsg
     //rmsg -> sign(4);
-    vector<string> emptyvec;
+    //vector<string> emptyvec;
 	//populate emptyvec
     //emptyvec.push_back(rmsg->signature);
 
 	vector<uint64_t> dest;
 
-    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-
-    for (uint64_t i=0; i<shardsInvolved.size(); i++)
+    //Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+/* 
+     for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
             if(shardsInvolved[i]==0)//to make sure reference comittee doesnt send to itself
             {
@@ -215,7 +220,8 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
                 {
                     dest.push_back(j);
                 }              
-        }
+        }  */
+        
     //enqueue to msg_queue
 	//msg_queue.enqueue(get_thd_id(), rmsg, emptyvec, dest);
 	dest.clear();
