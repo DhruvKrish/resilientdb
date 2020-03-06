@@ -270,6 +270,16 @@ txnid_t TxnManager::get_txn_id()
     return txn->txn_id;
 }
 
+void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
+{
+    txn->txn_id_RC = txn_id_RC;
+}
+
+txnid_t TxnManager::get_txn_id_RC()
+{
+    return txn->txn_id_RC;
+}
+
 //set cross_shard_txn flag
 void TxnManager::set_cross_shard_txn(){
     txn->cross_shard_txn=true;
@@ -442,6 +452,75 @@ uint64_t TxnManager::decr_commit_rsp_cnt()
 uint64_t TxnManager::get_commit_rsp_cnt()
 {
     return commit_rsp_cnt;
+}
+
+/*****************************/
+/*Helper functions for 2PC Message Processing*/
+
+//2PC Request Messages
+void TxnManager::set_2PC_Request_recvd()
+{
+    TwoPC_Request_recvd = true;
+}
+
+bool TxnManager::is_2PC_Request_recvd()
+{
+    return TwoPC_Request_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Request_cnt()
+{
+    TwoPC_Request_cnt--;
+    return TwoPC_Request_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Request_cnt()
+{
+    return TwoPC_Request_cnt;
+}
+
+//2PC Vote Messages
+void TxnManager::set_2PC_Vote_recvd()
+{
+    TwoPC_Vote_recvd = true;
+}
+
+bool TxnManager::is_2PC_Vote_recvd()
+{
+    return TwoPC_Vote_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Vote_cnt()
+{
+    TwoPC_Vote_cnt--;
+    return TwoPC_Vote_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Vote_cnt()
+{
+    return TwoPC_Vote_cnt;
+}
+
+//2PC Commit Messages
+void TxnManager::set_2PC_Commit_recvd()
+{
+    TwoPC_Commit_recvd = true;
+}
+
+bool TxnManager::is_2PC_Commit_recvd()
+{
+    return TwoPC_Commit_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Commit_cnt()
+{
+    TwoPC_Commit_cnt--;
+    return TwoPC_Commit_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Commit_cnt()
+{
+    return TwoPC_Commit_cnt;
 }
 
 /*****************************/
