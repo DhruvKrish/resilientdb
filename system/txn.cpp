@@ -153,6 +153,15 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     commit_rsp_cnt = prep_rsp_cnt + 1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
+    //Counters of 2PC messages
+    TwoPC_Request_cnt=g_min_invalid_nodes+1;
+    TwoPC_Vote_cnt=g_min_invalid_nodes+1;
+    TwoPC_Commit_cnt=g_min_invalid_nodes+1;
+    //2PC messages received should be false initially
+    TwoPC_Request_recvd=false;
+    TwoPC_Vote_recvd=false;
+    TwoPC_Commit_recvd=false;
+
     batchreq = NULL;
 
     txn_stats.init();
@@ -194,6 +203,15 @@ void TxnManager::release(uint64_t pool_id)
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
     commit_rsp_cnt = prep_rsp_cnt + 1;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
+    //Counters of 2PC messages
+    TwoPC_Request_cnt=g_min_invalid_nodes+1;
+    TwoPC_Vote_cnt=g_min_invalid_nodes+1;
+    TwoPC_Commit_cnt=g_min_invalid_nodes+1;
+    //2PC messages received should be false initially
+    TwoPC_Request_recvd=false;
+    TwoPC_Vote_recvd=false;
+    TwoPC_Commit_recvd=false;
+
     release_all_messages(tid);
 
     txn_stats.init();
