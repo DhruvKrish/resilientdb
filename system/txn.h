@@ -164,13 +164,13 @@ public:
     uint64_t cbatch;
 
     //Counters of 2PC messages
-    uint64_t 2PC_Request_cnt;
-    uint64_t 2PC_Vote_cnt;
-    uint64_t 2PC_Commit_cnt;
+    uint64_t TwoPC_Request_cnt;
+    uint64_t TwoPC_Vote_cnt;
+    uint64_t TwoPC_Commit_cnt;
     //Flag to check if 2PC messages received
-    bool 2PC_Request_recvd;
-    bool 2PC_Vote_recvd;
-    bool 2PC_Commit_recvd;
+    bool TwoPC_Request_recvd;
+    bool TwoPC_Vote_recvd;
+    bool TwoPC_Commit_recvd;
 
     uint64_t decr_2PC_Request_cnt();
     uint64_t get_2PC_Request_cnt();
