@@ -21,6 +21,8 @@ public:
     void reset(uint64_t pool_id);
     void release(uint64_t pool_id);
     txnid_t txn_id;
+    //Transaction ID of the reference committee for a cross shard transaction.
+    txnid_t txn_id_RC;
     //Flag to check if transacation is cross sharded
     bool cross_shard_txn;
     //List of shards involved in the transaction
@@ -99,6 +101,10 @@ public:
     Workload *get_wl();
     void set_txn_id(txnid_t txn_id);
     txnid_t get_txn_id();
+    //set correspoding txn_id of Reference Committee
+    void set_txn_id_RC(txnid_t txn_id_RC);
+    //get correspoding txn_id of Reference Committee
+    txnid_t get_txn_id_RC();
     //set cross_shard_txn flag
     void set_cross_shard_txn();
     //check if cross_shard_txn flag is set
@@ -156,6 +162,30 @@ public:
 
     bool prepared = false;
     uint64_t cbatch;
+
+    //Counters of 2PC messages
+    uint64_t 2PC_Request_cnt;
+    uint64_t 2PC_Vote_cnt;
+    uint64_t 2PC_Commit_cnt;
+    //Flag to check if 2PC messages received
+    bool 2PC_Request_recvd;
+    bool 2PC_Vote_recvd;
+    bool 2PC_Commit_recvd;
+
+    uint64_t decr_2PC_Request_cnt();
+    uint64_t get_2PC_Request_cnt();
+    bool is_2PC_Request_recvd();
+    void set_2PC_Request_recvd();
+
+    uint64_t decr_2PC_Vote_cnt();
+    uint64_t get_2PC_Vote_cnt();
+    bool is_2PC_Vote_recvd();
+    void set_2PC_Vote_recvd();
+
+    uint64_t decr_2PC_Commit_cnt();
+    uint64_t get_2PC_Commit_cnt();
+    bool is_2PC_Commit_recvd();
+    void set_2PC_Commit_recvd();
 
     uint64_t prep_rsp_cnt;
     vector<uint64_t> info_prepare;
