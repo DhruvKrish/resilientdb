@@ -105,6 +105,7 @@ void WorkerThread::process(Message *msg)
     case EXECUTE_MSG:
         {
         TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+        cout<<"In execute:"<<endl;
         /*
         //Verifying that sharding information is persisted in Txn manager
         cout<< "In Execute:"<<endl;
@@ -122,8 +123,8 @@ void WorkerThread::process(Message *msg)
         */
         Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
 
-        //if Request orginated form client and it is a cross shard transaction (current node can only be reference commitee)
-        if((txn_man->return_id > g_node_cnt) && (txn_man->get_cross_shard_txn()))
+        //if current node is reference committee, phase -> Cross shard transaction recieved from client  
+        if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
@@ -187,12 +188,10 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     ExecuteMessage *emsg = (ExecuteMessage *)msg;
     rmsg->rc_txn_id = emsg->index;
 
-    cout<<"Txn Id of last txn:"<<emsg->end_index<<endl;
-
-
+    //getting txn manager of the last transaction
     TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
     
-    cout<<"size :: "<<txn_man->batchreq->requestMsg.size()<<endl;
+    //cout<<"size :: "<<txn_man->batchreq->requestMsg.size()<<endl;
 
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
@@ -200,15 +199,24 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     }
 
     //add signing to rmsg
-    //rmsg -> sign(4);
-    //vector<string> emptyvec;
+    rmsg -> sign(4);
+    vector<string> emptyvec;
 	//populate emptyvec
-    //emptyvec.push_back(rmsg->signature);
+    emptyvec.push_back(rmsg->signature);
 
 	vector<uint64_t> dest;
 
-    //Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-/* 
+    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+
+    cout<<"Printing shards involved:"<<endl;
+
+    for (uint64_t i=0; i<shardsInvolved.size(); i++)
+        {
+            cout<<shardsInvolved[i]<<endl;
+        }
+
+  
+
      for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
             if(shardsInvolved[i]==0)//to make sure reference comittee doesnt send to itself
@@ -220,10 +228,10 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
                 {
                     dest.push_back(j);
                 }              
-        }  */
+        }  
         
     //enqueue to msg_queue
-	//msg_queue.enqueue(get_thd_id(), rmsg, emptyvec, dest);
+	msg_queue.enqueue(get_thd_id(), rmsg, emptyvec, dest);
 	dest.clear();
 
     return RCOK;  
