@@ -105,7 +105,7 @@ void WorkerThread::process(Message *msg)
     case EXECUTE_MSG:
         {
         TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
-        cout<<"In execute:"<<endl;
+        cout<<"In execute: "<<endl;
         /*
         //Verifying that sharding information is persisted in Txn manager
         cout<< "In Execute:"<<endl;
@@ -190,8 +190,6 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 
     //getting txn manager of the last transaction
     TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
-    
-    //cout<<"size :: "<<txn_man->batchreq->requestMsg.size()<<endl;
 
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
@@ -215,16 +213,15 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
             cout<<shardsInvolved[i]<<endl;
         }
 
-  
-
-     for (uint64_t i=0; i<shardsInvolved.size(); i++)
+    //populating destination array to send to invloved shards
+    for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
             if(shardsInvolved[i]==0)//to make sure reference comittee doesnt send to itself
             {
                 continue;
             }
             
-            for(uint64_t j=shardsInvolved[i]; j<shardsInvolved[i]+g_shard_size; j++)
+            for(uint64_t j=shardsInvolved[i]*g_shard_size; j<(shardsInvolved[i]*g_shard_size)+g_shard_size; j++)
                 {
                     dest.push_back(j);
                 }              
