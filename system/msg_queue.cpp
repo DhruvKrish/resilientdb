@@ -134,6 +134,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_CHKPT_MSG:
     case PBFT_PREP_MSG:
     case PBFT_COMMIT_MSG:
+    case REQUEST_2PC:
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
