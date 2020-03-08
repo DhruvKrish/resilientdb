@@ -314,3 +314,61 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 
     return RCOK;
 }
+
+RC WorkerThread::process_request_2pc(Message *msg)
+{
+    // Check if incoming message is valid
+    Request_2PCBatch *reqmsg = (Request_2PCBatch *) msg;
+    validate_msg(reqmsg);
+
+    if (requested(pmsg))
+    {
+        // Send Commit messages.
+        txn_man->send_pbft_commit_msgs();
+
+        // End the prepare counter.
+        INC_STATS(get_thd_id(), time_prepare, get_sys_clock() - txn_man->txn_stats.time_start_prepare);
+    }
+
+    return RCOK;
+}
+
+bool WorkerThread::requested(Request_2PCBatch *msg)
+{
+    //cout << "Inside PREPARED: " << txn_man->get_txn_id() << "\n";
+    //fflush(stdout);
+
+    // Once prepared is set, no processing for further messages.
+    if (txn_man->is_prepared())
+    {
+        return false;
+    }
+
+    // If BatchRequests messages has not arrived yet, then return false.
+    if (txn_man->get_hash().empty())
+    {
+        // Store the message.
+        txn_man->info_prepare.push_back(msg->return_node);
+        return false;
+    }
+    else
+    {
+        if (!checkMsg(msg))
+        {
+            // If message did not match.
+            cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
+            cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
+            fflush(stdout);
+            return false;
+        }
+    }
+
+    uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
+    if (request_2pc_cnt == 0)
+    {
+        //txn_man->set_prepared();
+        return true;
+    }
+
+    return false;
+}

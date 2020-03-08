@@ -166,6 +166,7 @@ void WorkerThread::process(Message *msg)
         break;
     case REQUEST_2PC:
         cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
+        // Logic to handle only by primary of a shard
         break;
     default:
         printf("Msg: %d\n", msg->get_rtype());
@@ -1465,6 +1466,46 @@ bool WorkerThread::checkMsg(Message *msg)
  * @return bool True if the transactions of this batch are prepared.
  */
 bool WorkerThread::prepared(PBFTPrepMessage *msg)
+{
+    //cout << "Inside PREPARED: " << txn_man->get_txn_id() << "\n";
+    //fflush(stdout);
+
+    // Once prepared is set, no processing for further messages.
+    if (txn_man->is_prepared())
+    {
+        return false;
+    }
+
+    // If BatchRequests messages has not arrived yet, then return false.
+    if (txn_man->get_hash().empty())
+    {
+        // Store the message.
+        txn_man->info_prepare.push_back(msg->return_node);
+        return false;
+    }
+    else
+    {
+        if (!checkMsg(msg))
+        {
+            // If message did not match.
+            cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
+            cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
+            fflush(stdout);
+            return false;
+        }
+    }
+
+    uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
+    if (prep_cnt == 0)
+    {
+        txn_man->set_prepared();
+        return true;
+    }
+
+    return false;
+}
+
+bool WorkerThread::requested(Request_2PCBatch *msg)
 {
     //cout << "Inside PREPARED: " << txn_man->get_txn_id() << "\n";
     //fflush(stdout);

@@ -37,6 +37,7 @@ public:
     RC process_batch(Message *msg);
     void send_checkpoints(uint64_t txn_id);
     RC process_pbft_chkpt_msg(Message *msg);
+    RC process_request_2pc(Message *msg);
 
 #if EXECUTION_THREAD
     void send_execute_msg();
