@@ -31,6 +31,9 @@ public:
     void create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid);
     void set_txn_man_fields(BatchRequests *breq, uint64_t bid);
 
+    // Sending request 2PC Batch Req
+    void create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, uint64_t tid);
+
     bool validate_msg(Message *msg);
     bool checkMsg(Message *msg);
     RC process_client_batch(Message *msg);
@@ -64,6 +67,8 @@ public:
 #endif
 
     bool prepared(PBFTPrepMessage *msg);
+    // method to see if Request2PC message was requested
+    bool requested(Request_2PCBatch *msg);
     RC process_pbft_prep_msg(Message *msg);
 
     bool committed_local(PBFTCommitMessage *msg);

@@ -324,7 +324,7 @@ RC WorkerThread::process_request_2pc(Message *msg)
     if (requested(reqmsg))
     {
         // Call pre-prep
-        txn_man->send_pbft_commit_msgs();
+        create_and_send_request_2pc_batchreq(reqmsg, txn_man->get_txn_id_RC());
 
         // End the prepare counter.
         INC_STATS(get_thd_id(), time_prepare, get_sys_clock() - txn_man->txn_stats.time_start_prepare);

@@ -1531,10 +1531,11 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
         if (!checkMsg(msg))
         {
             // If message did not match.
-            cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
+            // test below understanding
+            /* cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
             cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
             fflush(stdout);
-            return false;
+            return false; */
         }
     }
 
@@ -1594,32 +1595,13 @@ void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, u
         }
 
         txn_man->register_thread(this);
+        // Doubtful about this bit
         txn_man->return_id = msg->return_node;
 
         // Fields that need to updated according to the specific algorithm.
         algorithm_specific_update(msg, i);
 
         init_txn_man(msg->cqrySet[i]);
-
-        //Check if cross_shard_txn is set
-        /* if(msg->cqrySet[i]->cross_shard_txn){
-            cout<<"Inter Shard Flag set\n";
-            fflush(stdout);
-        } */
-
-        //Print shard list
-        /* cout<<"List of shards in transaction ID:"<<txn_id<<"\n";
-        fflush(stdout);
-        for(uint64_t j=0;j<msg->cqrySet[i]->shards_involved.size();j++){
-            cout<<msg->cqrySet[i]->shards_involved[j]<<"\n";
-            fflush(stdout);
-        } */
-
-        /* if(msg->cqrySet[i]->shards_involved.size()==0){
-            cout<<"No shards in list\n";
-            fflush(stdout);
-        } */
-
 
         // Append string representation of this txn.
         batchStr += msg->cqrySet[i]->getString();
