@@ -1547,3 +1547,137 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
 
     return false;
 }
+
+/**
+ * This function is used by the primary replicas of each shard to create and set 
+ * transaction managers for each transaction part of the Request_2PCBatch message sent 
+ * by the Reference Committee. Further, to ensure integrity a hash of the complete batch is 
+ * generated, which is also used in future communication.
+ *
+ * @param msg Batch of transactions as a Request_2PCBatch message.
+ * @param tid Identifier for the first transaction of the batch.
+ */
+void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, uint64_t tid)
+{
+    // Creating a new BatchRequests Message.
+    Message *bmsg = Message::create_message(BATCH_REQ);
+    BatchRequests *breq = (BatchRequests *)bmsg;
+    breq->init(get_thd_id());
+
+    // Starting index for this batch of transactions.
+    next_set = tid;
+
+    // String of transactions in a batch to generate hash.
+    string batchStr;
+
+    // Allocate transaction manager for all the requests in batch.
+    for (uint64_t i = 0; i < get_batch_size(); i++)
+    {
+        uint64_t txn_id = get_next_txn_id() + i;
+
+        //cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
+        //fflush(stdout);
+        txn_man = get_transaction_manager(txn_id, 0);
+
+        // Unset this txn man so that no other thread can concurrently use.
+        while (true)
+        {
+            bool ready = txn_man->unset_ready();
+            if (!ready)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        txn_man->register_thread(this);
+        txn_man->return_id = msg->return_node;
+
+        // Fields that need to updated according to the specific algorithm.
+        algorithm_specific_update(msg, i);
+
+        init_txn_man(msg->cqrySet[i]);
+
+        //Check if cross_shard_txn is set
+        /* if(msg->cqrySet[i]->cross_shard_txn){
+            cout<<"Inter Shard Flag set\n";
+            fflush(stdout);
+        } */
+
+        //Print shard list
+        /* cout<<"List of shards in transaction ID:"<<txn_id<<"\n";
+        fflush(stdout);
+        for(uint64_t j=0;j<msg->cqrySet[i]->shards_involved.size();j++){
+            cout<<msg->cqrySet[i]->shards_involved[j]<<"\n";
+            fflush(stdout);
+        } */
+
+        /* if(msg->cqrySet[i]->shards_involved.size()==0){
+            cout<<"No shards in list\n";
+            fflush(stdout);
+        } */
+
+
+        // Append string representation of this txn.
+        batchStr += msg->cqrySet[i]->getString();
+
+        // Setting up data for BatchRequests Message.
+        breq->copy_from_txn(txn_man, msg->cqrySet[i]);
+
+        // Reset this txn manager.
+        bool ready = txn_man->set_ready();
+        assert(ready);
+    }
+
+    // Now we need to unset the txn_man again for the last txn of batch.
+    while (true)
+    {
+        bool ready = txn_man->unset_ready();
+        if (!ready)
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Generating the hash representing the whole batch in last txn man.
+    txn_man->set_hash(calculateHash(batchStr));
+    txn_man->hashSize = txn_man->hash.length();
+
+    breq->copy_from_txn(txn_man);
+
+    // Storing the BatchRequests message.
+    txn_man->set_primarybatch(breq);
+
+    // Storing all the signatures.
+    vector<string> emptyvec;
+    TxnManager *tman = get_transaction_manager(txn_man->get_txn_id() - 2, 0);
+    for (uint64_t i = 0; i < g_node_cnt; i++)
+    {
+        if (i == g_node_id)
+        {
+            continue;
+        }
+
+        // added for sharding
+        if (!is_in_same_shard(i, g_node_id))
+        {
+            continue;
+        }
+        // end
+        breq->sign(i);
+        tman->allsign.push_back(breq->signature); // Redundant
+        emptyvec.push_back(breq->signature);
+    }
+
+    // Send the BatchRequests message to all the other replicas in the same shard.
+    vector<uint64_t> dest = nodes_to_send(g_node_id, g_node_id + g_shard_size);
+    msg_queue.enqueue(get_thd_id(), breq, emptyvec, dest);
+    emptyvec.clear();
+}
