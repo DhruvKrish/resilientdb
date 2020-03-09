@@ -168,6 +168,9 @@ void WorkerThread::process(Message *msg)
         cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
         // Logic to handle only by primary of a shard
         break;
+    case VOTE_2PC:
+        // Logic to handle only by primary if reference committee
+        break;
     default:
         printf("Msg: %d\n", msg->get_rtype());
         fflush(stdout);

@@ -320,10 +320,10 @@ RC WorkerThread::process_request_2pc(Message *msg)
     // Check if incoming message is valid
     Request_2PCBatch *reqmsg = (Request_2PCBatch *) msg;
     validate_msg(reqmsg);
-
-    if (requested(pmsg))
+    
+    if (requested(reqmsg))
     {
-        // Send Commit messages.
+        // Call pre-prep
         txn_man->send_pbft_commit_msgs();
 
         // End the prepare counter.
@@ -339,13 +339,13 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
     //fflush(stdout);
 
     // Once prepared is set, no processing for further messages.
-    if (txn_man->is_prepared())
+    if (txn_man->is_2PC_Request_recvd())
     {
         return false;
     }
 
     // If BatchRequests messages has not arrived yet, then return false.
-    if (txn_man->get_hash().empty())
+    /* if (txn_man->get_hash().empty())
     {
         // Store the message.
         txn_man->info_prepare.push_back(msg->return_node);
@@ -361,12 +361,12 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
             fflush(stdout);
             return false;
         }
-    }
+    } */
 
     uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
     if (request_2pc_cnt == 0)
     {
-        //txn_man->set_prepared();
+        txn_man->set_2PC_Vote_recvd();
         return true;
     }
 
