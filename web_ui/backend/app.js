@@ -4,7 +4,7 @@ const port = 3000
 const fs = require('fs')
 
 function execute(data) {
-	command = './run.sh ' + '../.. ' + data.nodes + ' ' + data.clients + ' ' + data.max_txn_inf + '  > internal.log &'
+	command = './run.sh ' + '../.. ' + data.nodes + ' ' + data.clients + ' ' + data.max_txn_inf + ' ' + data.shards + '  > internal.log &'
 	const exec = require('child_process').exec
     
 	exec(command, (err, stdout, stderr) => {
@@ -22,6 +22,7 @@ app.get('/api/run', (req, res) => {
 	data.nodes = req.query.nodes
 	data.clients = req.query.clients
 	data.max_txn_inf = req.query.max_inf
+	data.shards = req.query.shards
 	execute(data)
 	res.send({ 'result': 200, 'status': 'ResilientDB started successfully' })
 })
