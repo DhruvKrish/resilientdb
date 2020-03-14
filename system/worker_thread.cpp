@@ -167,9 +167,8 @@ void WorkerThread::process(Message *msg)
         break;
     case REQUEST_2PC:
         //bool tempPrime = is_primary_node(0, g_node_id);
-        //cout<<"Is primary: "<<tempPrime<<endl;
-        cout<<"In receive"<<endl;
-        cout<<"New new Received 2PC Req in Node "<<g_node_id<<endl;
+        cout<<"Is primary: "<<tempPrime<<endl;
+        cout<<"Received 2PC Req in Node "<<g_node_id<<endl;
         fflush(stdout);
         
         // Logic to handle only by primary of a shard
@@ -183,7 +182,7 @@ void WorkerThread::process(Message *msg)
         // Logic to handle only by primary if reference committee
         cout<<"Received 2PC Vote in Node "<<g_node_id<<endl;
         fflush(stdout);
-        if(g_node_id == view_to_primary(get_view())) {
+        if((is_primary_node(0, g_node_id))) {
             // Process Vote_2PC
             //rc = process_(msg);
         }
@@ -1546,11 +1545,11 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 
 bool WorkerThread::requested(Request_2PCBatch *msg)
 {
-    //cout << "Inside PREPARED: " << txn_man->get_txn_id() << "\n";
+    //cout << "Inside Requested: " << txn_man->get_txn_id() << "\n";
     //fflush(stdout);
 
-    // Once prepared is set, no processing for further messages.
-    if (txn_man->is_prepared())
+    // Once requested is set, no processing for further messages.
+    if (txn_man->is_2PC_Request_recvd())
     {
         return false;
     }
@@ -1568,17 +1567,17 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
         {
             // If message did not match.
             // test below understanding
-            /* cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
+            cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
             cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
             fflush(stdout);
-            return false; */
+            return false;
         }
     }
 
-    uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt();
-    if (prep_cnt == 0)
+    uint64_t request_2pc_cnt = txn_man->decr_prep_rsp_cnt();
+    if (request_2pc_cnt == 0)
     {
-        txn_man->set_prepared();
+        txn_man->set_2PC_Request_recvd();
         return true;
     }
 
