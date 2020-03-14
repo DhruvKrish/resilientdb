@@ -179,40 +179,47 @@ void WorkerThread::process(Message *msg)
 
 RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 {
-  
+    cout<<"In send 2PC Req func"<<endl;
     Message *mssg = Message::create_message(REQUEST_2PC);
     Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
     rmsg->init();
-    
+
     //getting last transaction
     ExecuteMessage *emsg = (ExecuteMessage *)msg;
     rmsg->rc_txn_id = emsg->index;
 
     //getting txn manager of the last transaction
     TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
+    //Lock the transaction Manager
 
-    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
-    {
-        rmsg->cqrySet.add((YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i]);
-    }
-
-    //add signing to rmsg
-    rmsg -> sign(4);
-    vector<string> emptyvec;
-	//populate emptyvec
-    emptyvec.push_back(rmsg->signature);
-
-	vector<uint64_t> dest;
-
-    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-
-    cout<<"Printing shards involved:"<<endl;
-
-    for (uint64_t i=0; i<shardsInvolved.size(); i++)
+    while (true)
         {
-            cout<<shardsInvolved[i]<<endl;
+            bool ready = txn_man->unset_ready();
+            if (!ready)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
         }
 
+   
+    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    {
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        clqry->return_node = g_node_id;
+        rmsg->cqrySet.add(clqry);
+               
+    }
+    vector<string> emptyvec;
+	vector<uint64_t> dest;
+    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+
+    // Reset this txn manager.
+        bool ready = txn_man->set_ready();
+        assert(ready);
     //populating destination array to send to invloved shards
     for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
@@ -222,9 +229,9 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
             }
             
             for(uint64_t j=shardsInvolved[i]*g_shard_size; j<(shardsInvolved[i]*g_shard_size)+g_shard_size; j++)
-                {
-                    dest.push_back(j);
-                }              
+            {
+                dest.push_back(j);           
+            }             
         }  
         
     //enqueue to msg_queue
