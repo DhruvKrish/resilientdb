@@ -173,6 +173,7 @@ void WorkerThread::process(Message *msg)
         break;
     case VOTE_2PC:
         // Logic to handle only by primary if reference committee
+        cout<<"Received 2PC Vote in Node "<<g_node_id<<endl;
         if(g_node_id == view_to_primary(get_view())) {
             // Process Vote_2PC
             //rc = process_(msg);
