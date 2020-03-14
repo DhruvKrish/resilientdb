@@ -111,16 +111,23 @@ RC ClientThread::run()
 	ClientQueryBatch *bmsg = (ClientQueryBatch *)mssg;
 	bmsg->init();
 #endif
-	// get the primary in the current view for sharding
-	uint32_t next_node_id = view_to_primary(get_view());
+	// get the primary in the current view for sharding (For intrashard transactions)
+	//uint32_t next_node_id = view_to_primary(get_view());
+
+		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
+	uint32_t next_node_id = 0;
+	
 	while (!simulation->is_done())
 	{
 		heartbeat();
 		progress_stats();
 		int32_t inf_cnt;
 		uint32_t next_node = get_view();
-		// get the primary in the current view for sharding
-		next_node_id = view_to_primary(get_view());
+		// get the primary in the current view for sharding (For intrashard transactions)
+		//next_node_id = view_to_primary(get_view());
+
+		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
+		next_node_id = 0;
 
 #if VIEW_CHANGES
 		//if a request by this client hasnt been completed in time

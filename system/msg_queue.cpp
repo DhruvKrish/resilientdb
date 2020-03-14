@@ -87,6 +87,15 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
             entry->allsign.push_back(((PBFTCommitMessage *)msg)->signature);
         }
         break;
+    case REQUEST_2PC:
+        for (uint64_t i = 0; i < dest.size(); i++)
+        {
+            ((Request_2PCBatch *)msg)->sign(dest[i]);
+            entry->allsign.push_back(msg->signature);
+        }
+               
+            
+        break;
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
@@ -122,7 +131,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         // Based on the destination (only 1), messages are placed in the queue.
         entry->starttime = get_sys_clock();
         entry->msg->dest.push_back(dest[0]);
-
+    
         uint64_t rand = dest[0] % g_this_send_thread_cnt;
         while (!m_queue[rand]->push(entry) && !simulation->is_done())
         {
@@ -134,6 +143,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_CHKPT_MSG:
     case PBFT_PREP_MSG:
     case PBFT_COMMIT_MSG:
+    case REQUEST_2PC:
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
@@ -183,7 +193,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     }
     default:
         break;
-    }
+}
 }
 
 vector<uint64_t> MessageQueue::dequeue(uint64_t thd_id, vector<string> &allsign, Message *&msg)
