@@ -241,6 +241,9 @@ public:
     void copy_from_buf(char *buf);
     void copy_to_buf(char *buf);
     uint64_t get_size();
+    void sign(uint64_t dest_node = UINT64_MAX);
+    bool validate();
+    string getString();
         
     uint64_t rc_txn_id;
 };
