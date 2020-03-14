@@ -165,11 +165,18 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_commit_msg(msg);
         break;
     case REQUEST_2PC:
-        cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
+        cout<<"Received 2PC Req in Node "<<g_node_id<<endl;
         // Logic to handle only by primary of a shard
+        if(g_node_id == view_to_primary(get_view())) {
+            rc = process_request_2pc(msg);
+        }
         break;
     case VOTE_2PC:
         // Logic to handle only by primary if reference committee
+        if(g_node_id == view_to_primary(get_view())) {
+            // Process Vote_2PC
+            //rc = process_(msg);
+        }
         break;
     default:
         printf("Msg: %d\n", msg->get_rtype());
