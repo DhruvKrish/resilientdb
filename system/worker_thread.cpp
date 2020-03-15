@@ -167,8 +167,8 @@ void WorkerThread::process(Message *msg)
         break;
     case REQUEST_2PC:
         //bool tempPrime = is_primary_node(0, g_node_id);
-        cout<<"Is primary: "<<tempPrime<<endl;
-        cout<<"Received 2PC Req in Node "<<g_node_id<<endl;
+        cout<<"Is primary: "<<is_primary_node(0, g_node_id)<<endl;
+        // cout<<"Received 2PC Req in Node "<<g_node_id<<endl;
         fflush(stdout);
         
         // Logic to handle only by primary of a shard
@@ -1545,17 +1545,18 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 
 bool WorkerThread::requested(Request_2PCBatch *msg)
 {
-    //cout << "Inside Requested: " << txn_man->get_txn_id() << "\n";
-    //fflush(stdout);
+    /* cout << "Inside Requested: " << txn_man->get_txn_id() << "\n";
+    fflush(stdout); */
 
     // Once requested is set, no processing for further messages.
     if (txn_man->is_2PC_Request_recvd())
     {
         return false;
     }
+    // cout << "is_2PC_Request was false" << endl;
 
     // If BatchRequests messages has not arrived yet, then return false.
-    if (txn_man->get_hash().empty())
+    /*if (txn_man->get_hash().empty())
     {
         // Store the message.
         txn_man->info_prepare.push_back(msg->return_node);
@@ -1572,11 +1573,15 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
             fflush(stdout);
             return false;
         }
-    }
+    } */
 
-    uint64_t request_2pc_cnt = txn_man->decr_prep_rsp_cnt();
+    // Decrementing request_2p_cnt
+    uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
+    cout << "Request_2PC_Count: " << request_2pc_cnt << endl;
+    fflush(stdout);
     if (request_2pc_cnt == 0)
     {
+        cout << "Setting to request_2pc_cnt to true here" << endl;
         txn_man->set_2PC_Request_recvd();
         return true;
     }
@@ -1593,9 +1598,11 @@ bool WorkerThread::requested(Request_2PCBatch *msg)
  * @param msg Batch of transactions as a Request_2PCBatch message.
  * @param tid Identifier for the first transaction of the batch.
  */
-void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, uint64_t tid)
+void WorkerThread::create_and_send_cross_shard_batch(Request_2PCBatch *msg, uint64_t tid)
 {
     // Creating a new BatchRequests Message.
+    cout << "Creating batch for cross shard: " << endl;
+    fflush(stdout);
     Message *bmsg = Message::create_message(BATCH_REQ);
     BatchRequests *breq = (BatchRequests *)bmsg;
     breq->init(get_thd_id());
@@ -1611,8 +1618,8 @@ void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, u
     {
         uint64_t txn_id = get_next_txn_id() + i;
 
-        //cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
-        //fflush(stdout);
+        /* cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
+        fflush(stdout); */
         txn_man = get_transaction_manager(txn_id, 0);
 
         // Unset this txn man so that no other thread can concurrently use.
@@ -1633,6 +1640,11 @@ void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, u
         // Doubtful about this bit
         txn_man->return_id = msg->return_node;
 
+        /* cout<<"rc_txn_id: "<<msg->rc_txn_id<<endl;
+        fflush(stdout); */
+        // Set txn_id_rc for the txn manager
+        txn_man->set_txn_id_RC(msg->rc_txn_id);
+
         // Fields that need to updated according to the specific algorithm.
         algorithm_specific_update(msg, i);
 
@@ -1640,16 +1652,17 @@ void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, u
 
         // Append string representation of this txn.
         batchStr += msg->cqrySet[i]->getString();
-
         // Setting up data for BatchRequests Message.
         breq->copy_from_txn(txn_man, msg->cqrySet[i]);
 
         // Reset this txn manager.
         bool ready = txn_man->set_ready();
         assert(ready);
+        cout << "is ready: " << ready << endl;
     }
 
     // Now we need to unset the txn_man again for the last txn of batch.
+    cout << "Attempt to unset txn man " << endl;
     while (true)
     {
         bool ready = txn_man->unset_ready();
@@ -1694,6 +1707,8 @@ void WorkerThread::create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, u
     }
 
     // Send the BatchRequests message to all the other replicas in the same shard.
+    cout << "Sending cross shard msg info to destination starting from: " << g_node_id << " to: " << g_node_id + g_shard_size << endl;
+    fflush(stdout);
     vector<uint64_t> dest = nodes_to_send(g_node_id, g_node_id + g_shard_size);
     msg_queue.enqueue(get_thd_id(), breq, emptyvec, dest);
     emptyvec.clear();

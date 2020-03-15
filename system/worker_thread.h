@@ -32,7 +32,7 @@ public:
     void set_txn_man_fields(BatchRequests *breq, uint64_t bid);
 
     // Sending request 2PC Batch Req
-    void create_and_send_request_2pc_batchreq(Request_2PCBatch *msg, uint64_t tid);
+    void create_and_send_cross_shard_batch(Request_2PCBatch *msg, uint64_t tid);
 
     bool validate_msg(Message *msg);
     bool checkMsg(Message *msg);

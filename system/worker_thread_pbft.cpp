@@ -320,11 +320,14 @@ RC WorkerThread::process_request_2pc(Message *msg)
     // Check if incoming message is valid
     Request_2PCBatch *reqmsg = (Request_2PCBatch *) msg;
     validate_msg(reqmsg);
-    
+    cout<<"Inside process_request_2pc reqmsg->txn_id: "<<reqmsg->txn_id<<endl;
+    fflush(stdout);
     if (requested(reqmsg))
     {
-        // Call pre-prep
-        create_and_send_request_2pc_batchreq(reqmsg, txn_man->get_txn_id_RC());
+        /* cout<<"reqmsg->txn_id: "<<reqmsg->txn_id<<endl;
+        fflush(stdout); */
+        // Call cross shard request
+        create_and_send_cross_shard_batch(reqmsg, reqmsg->txn_id);
 
         // End the prepare counter.
         INC_STATS(get_thd_id(), time_prepare, get_sys_clock() - txn_man->txn_stats.time_start_prepare);
