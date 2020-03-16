@@ -140,10 +140,11 @@ void WorkerThread::process(Message *msg)
             rc = process_execute_msg(msg); 
             }
         }
-        //if current node is in of the shards involved and request originated from Ref. commitee:
-        else if(g_node_id>g_shard_size and g_node_id<g_node_cnt and txn_man->return_id < g_shard_size)
+        //if current node is in one of the shards and had recieved Request_2PC from reference commitee
+        else if(g_node_id>=g_shard_size && g_node_id<g_node_cnt && txn_man->return_id < g_shard_size && 
+                txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            //create and send Vote_2PC
+            create_and_send_Vote_2PC(msg);
         }
         else //Intra shard : regular Execution
         {
@@ -241,6 +242,50 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     return RCOK;  
 }
 
+RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
+{
+    cout<<"In crate and send Vote 2PC func"<<endl;
+    Message *mssg = Message::create_message(VOTE_2PC);
+    Vote_2PCBatch *vmsg = (Vote_2PCBatch *)mssg;
+    vmsg->init();
+
+    ExecuteMessage *emsg = (ExecuteMessage *)msg;
+    TxnManager *txn_man = get_transaction_manager(emsg->index, 0);
+
+    while (true)
+        {
+            bool ready = txn_man->unset_ready();
+            if (!ready)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+    vmsg->rc_txn_id = txn_man->get_txn_id_RC();
+
+    // Reset this txn manager.
+    bool ready = txn_man->set_ready();
+    assert(ready);
+
+    vector<string> emptyvec;
+	vector<uint64_t> dest;
+        
+    //populating destination array to send to all nodes of reference comitee
+    for (uint64_t i=0; i<g_shard_size; i++)
+        {
+            dest.push_back(i);           
+        }             
+        
+    //enqueue to msg_queue
+	msg_queue.enqueue(get_thd_id(), vmsg, emptyvec, dest);
+	dest.clear();
+
+    return RCOK;  
+}
 
 
 
