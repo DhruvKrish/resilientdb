@@ -258,7 +258,7 @@ public:
     uint64_t rc_txn_id;
 };
 
-class Commit_2PC : public ClientQueryBatch
+class Global_Commit_2PC : public ClientQueryBatch
 {
 public:
     void copy_from_buf(char *buf);

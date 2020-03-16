@@ -126,8 +126,8 @@ Message *Message::create_message(RemReqType rtype)
 	case VOTE_2PC:
 		msg = new Vote_2PC;
 		break;
-	case COMMIT_2PC:
-		msg = new Commit_2PC;
+	case GLOBAL_COMMIT_2PC:
+		msg = new GLOBAL_COMMIT_2PC;
 		break;
 	case ABORT_2PC:
 		msg = new Abort_2PC;
@@ -330,6 +330,13 @@ void Message::release_message(Message *msg)
 	case VOTE_2PC:
 	{
 		Vote_2PC *m_msg = (Vote_2PC *)msg;
+		m_msg->release();
+		delete m_msg;
+		break;
+	}
+	case GLOBAL_COMMIT_2PC:
+	{
+		Global_Commit_2PC *m_msg = (Global_Commit_2PC *)msg;
 		m_msg->release();
 		delete m_msg;
 		break;
@@ -1173,6 +1180,15 @@ uint64_t Vote_2PC::get_size()
 	return size;
 }
 
+uint64_t Global_Commit_2PC::get_size()
+{
+	uint64_t size = ClientQueryBatch::get_size();
+
+	size += sizeof(rc_txn_id);
+
+	return size;
+}
+
 
 
 void ClientQueryBatch::init()
@@ -1241,6 +1257,15 @@ void Vote_2PC::copy_from_buf(char *buf)
 	assert(ptr == get_size());
 }
 
+void Global_Commit_2PC::copy_from_buf(char *buf)
+{
+	ClientQueryBatch::copy_from_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_VAL(rc_txn_id, buf, ptr);
+
+	assert(ptr == get_size());
+}
+
 void ClientQueryBatch::copy_to_buf(char *buf)
 {
 	Message::mcopy_to_buf(buf);
@@ -1268,6 +1293,15 @@ void Request_2PCBatch::copy_to_buf(char *buf)
 }
 
 void Vote_2PC::copy_to_buf(char *buf)
+{
+	ClientQueryBatch::copy_to_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_BUF(buf, rc_txn_id, ptr);
+	
+	assert(ptr == get_size());
+}
+
+void Global_Commit_2PC::copy_to_buf(char *buf)
 {
 	ClientQueryBatch::copy_to_buf(buf);
 	uint64_t ptr = ClientQueryBatch::get_size();
