@@ -127,7 +127,7 @@ Message *Message::create_message(RemReqType rtype)
 		msg = new Vote_2PC;
 		break;
 	case GLOBAL_COMMIT_2PC:
-		msg = new GLOBAL_COMMIT_2PC;
+		msg = new Global_Commit_2PC;
 		break;
 	case ABORT_2PC:
 		msg = new Abort_2PC;

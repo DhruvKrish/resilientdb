@@ -129,10 +129,12 @@ void WorkerThread::process(Message *msg)
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
         }
-        //If current node is reference commitee & request originated from another shard
-        else if(g_node_id < g_shard_size && txn_man->return_id>=g_shard_size && txn_man->return_id<g_node_cnt) 
+        //If current node is reference commitee & 2PC_Vote received from another shard
+        else if(g_node_id < g_shard_size && txn_man->return_id>=g_shard_size && txn_man->return_id<g_node_cnt
+             && txn_man->TwoPC_Vote_recvd) 
         {
             //create and send global commit/abort to shards involved
+            create_and_send_global_commit(msg);
             
             //if ref committee also part of shards involved, then execute
             if(shardsInvolved.contains(0))
@@ -244,9 +246,9 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 
 RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
 {
-    cout<<"In crate and send Vote 2PC func"<<endl;
+    cout<<"In create and send Vote 2PC func"<<endl;
     Message *mssg = Message::create_message(VOTE_2PC);
-    Vote_2PCBatch *vmsg = (Vote_2PCBatch *)mssg;
+    Vote_2PC *vmsg = (Vote_2PC *)mssg;
     vmsg->init();
 
     ExecuteMessage *emsg = (ExecuteMessage *)msg;
@@ -286,6 +288,66 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
 
     return RCOK;  
 }
+
+RC WorkerThread::create_and_send_global_commit(Message *msg)
+{
+    cout<<"In create and send Global Commit func"<<endl;
+    Message *mssg = Message::create_message(GLOBAL_COMMIT_2PC);
+    Global_Commit_2PC *gmsg = (Global_Commit_2PC *)mssg;
+    gmsg->init();
+
+    ExecuteMessage *emsg = (ExecuteMessage *)msg;
+    gmsg->rc_txn_id = emsg->index;
+
+    //getting txn manager of the last transaction
+    TxnManager *txn_man = get_transaction_manager(emsg->index, 0);
+    //Lock the transaction Manager
+
+    while (true)
+        {
+            bool ready = txn_man->unset_ready();
+            if (!ready)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+
+    Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+
+    //Reset this txn manager.
+    bool ready = txn_man->set_ready();
+    assert(ready);
+
+    vector<string> emptyvec;
+	vector<uint64_t> dest;
+
+    //populating destination array to send to invloved shards
+    for (uint64_t i=0; i<shardsInvolved.size(); i++)
+        {
+            if(shardsInvolved[i]==0)//to make sure reference comittee doesnt send to itself
+            {
+                continue;
+            }
+            
+            for(uint64_t j=shardsInvolved[i]*g_shard_size; j<(shardsInvolved[i]*g_shard_size)+g_shard_size; j++)
+            {
+                dest.push_back(j);           
+            }             
+        }  
+        
+
+    //enqueue to msg_queue
+	msg_queue.enqueue(get_thd_id(), gmsg, emptyvec, dest);
+	dest.clear();
+
+    return RCOK;  
+}
+
 
 
 
