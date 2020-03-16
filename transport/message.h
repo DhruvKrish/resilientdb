@@ -237,22 +237,41 @@ public:
 
 class Request_2PCBatch : public ClientQueryBatch
 {
-
+public:
+    void copy_from_buf(char *buf);
+    void copy_to_buf(char *buf);
+    uint64_t get_size();
+    void sign(uint64_t dest_node = UINT64_MAX);
+    bool validate();
+    string getString();
+        
+    uint64_t rc_txn_id;
 };
 
 class Vote_2PC : public ClientQueryBatch
 {
-
+public:
+    void copy_from_buf(char *buf);
+    void copy_to_buf(char *buf);
+    uint64_t get_size();
+            
+    uint64_t rc_txn_id;
 };
 
-class Commit_2PC : public ClientQueryBatch
+class Global_Commit_2PC : public ClientQueryBatch
 {
-
+public:
+    void copy_from_buf(char *buf);
+    void copy_to_buf(char *buf);
+    uint64_t get_size();
+            
+    uint64_t rc_txn_id;
 };
 
 class Abort_2PC : public ClientQueryBatch
 {
-
+public:
+    //uint64_t rc_txn_id;
 };
 
 

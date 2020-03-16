@@ -126,8 +126,8 @@ Message *Message::create_message(RemReqType rtype)
 	case VOTE_2PC:
 		msg = new Vote_2PC;
 		break;
-	case COMMIT_2PC:
-		msg = new Commit_2PC;
+	case GLOBAL_COMMIT_2PC:
+		msg = new Global_Commit_2PC;
 		break;
 	case ABORT_2PC:
 		msg = new Abort_2PC;
@@ -320,6 +320,28 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
+	case REQUEST_2PC:
+	{
+		Request_2PCBatch *m_msg = (Request_2PCBatch *)msg;
+		m_msg->release();
+		delete m_msg;
+		break;
+	}
+	case VOTE_2PC:
+	{
+		Vote_2PC *m_msg = (Vote_2PC *)msg;
+		m_msg->release();
+		delete m_msg;
+		break;
+	}
+	case GLOBAL_COMMIT_2PC:
+	{
+		Global_Commit_2PC *m_msg = (Global_Commit_2PC *)msg;
+		m_msg->release();
+		delete m_msg;
+		break;
+	}
+	
 	case RDONE:
 	{
 		DoneMessage *m_msg = (DoneMessage *)msg;
@@ -1131,14 +1153,43 @@ uint64_t ClientQueryBatch::get_size()
 
 	size += sizeof(return_node);
 	size += sizeof(batch_size);
-
+	
 	for (uint i = 0; i < get_batch_size(); i++)
 	{
 		size += cqrySet[i]->get_size();
 	}
+	
+	return size;
+}
+
+uint64_t Request_2PCBatch::get_size()
+{
+	uint64_t size = ClientQueryBatch::get_size();
+
+	size += sizeof(rc_txn_id);
 
 	return size;
 }
+
+uint64_t Vote_2PC::get_size()
+{
+	uint64_t size = ClientQueryBatch::get_size();
+
+	size += sizeof(rc_txn_id);
+
+	return size;
+}
+
+uint64_t Global_Commit_2PC::get_size()
+{
+	uint64_t size = ClientQueryBatch::get_size();
+
+	size += sizeof(rc_txn_id);
+
+	return size;
+}
+
+
 
 void ClientQueryBatch::init()
 {
@@ -1146,6 +1197,7 @@ void ClientQueryBatch::init()
 	this->batch_size = get_batch_size();
 	this->cqrySet.init(get_batch_size());
 }
+
 
 void ClientQueryBatch::release()
 {
@@ -1183,6 +1235,34 @@ void ClientQueryBatch::copy_from_buf(char *buf)
 		cqrySet.add((YCSBClientQueryMessage *)msg);
 	}
 
+	
+	assert(ptr == ClientQueryBatch::get_size());
+}
+
+void Request_2PCBatch::copy_from_buf(char *buf)
+{
+	ClientQueryBatch::copy_from_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_VAL(rc_txn_id, buf, ptr);
+
+	assert(ptr == get_size());
+}
+
+void Vote_2PC::copy_from_buf(char *buf)
+{
+	ClientQueryBatch::copy_from_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_VAL(rc_txn_id, buf, ptr);
+
+	assert(ptr == get_size());
+}
+
+void Global_Commit_2PC::copy_from_buf(char *buf)
+{
+	ClientQueryBatch::copy_from_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_VAL(rc_txn_id, buf, ptr);
+
 	assert(ptr == get_size());
 }
 
@@ -1197,9 +1277,36 @@ void ClientQueryBatch::copy_to_buf(char *buf)
 	for (uint i = 0; i < get_batch_size(); i++)
 	{
 		cqrySet[i]->copy_to_buf(&buf[ptr]);
-		ptr += cqrySet[i]->get_size();
+		ptr += cqrySet[i]->get_size();		
 	}
+	
+	assert(ptr == ClientQueryBatch::get_size());
+}
 
+void Request_2PCBatch::copy_to_buf(char *buf)
+{
+	ClientQueryBatch::copy_to_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_BUF(buf, rc_txn_id, ptr);
+	
+	assert(ptr == get_size());
+}
+
+void Vote_2PC::copy_to_buf(char *buf)
+{
+	ClientQueryBatch::copy_to_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_BUF(buf, rc_txn_id, ptr);
+	
+	assert(ptr == get_size());
+}
+
+void Global_Commit_2PC::copy_to_buf(char *buf)
+{
+	ClientQueryBatch::copy_to_buf(buf);
+	uint64_t ptr = ClientQueryBatch::get_size();
+	COPY_BUF(buf, rc_txn_id, ptr);
+	
 	assert(ptr == get_size());
 }
 
@@ -1213,6 +1320,19 @@ string ClientQueryBatch::getString()
 
 	return message;
 }
+
+string Request_2PCBatch::getString()
+{
+	string message = std::to_string(this->return_node);
+	for (int i = 0; i < BATCH_SIZE; i++)
+	{
+		message += cqrySet[i]->getRequestString();
+	}
+	message += std::to_string(this->rc_txn_id);
+
+	return message;
+} 
+
 
 void ClientQueryBatch::sign(uint64_t dest_node)
 {
@@ -1230,6 +1350,20 @@ void ClientQueryBatch::sign(uint64_t dest_node)
 	this->sigSize = this->signature.size();
 	this->keySize = this->pubKey.size();
 }
+
+void Request_2PCBatch::sign(uint64_t dest_node)
+{
+this->signature = "0";
+/* #if USE_CRYPTO
+	string message = this->getString();
+
+	signingNodeNode(message, this->signature, this->pubKey, dest_node);
+#else
+	this->signature = "0";
+#endif
+	this->sigSize = this->signature.size();
+	this->keySize = this->pubKey.size(); */
+} 
 
 bool ClientQueryBatch::validate()
 {
@@ -1251,6 +1385,30 @@ bool ClientQueryBatch::validate()
 }
 
 #endif // Client_Batch
+
+ //makes sure message is valid, returns true for false
+bool Request_2PCBatch::validate()
+{
+/*
+ #if USE_CRYPTO
+	string message = this->getString();
+
+	//cout << "Sign: " << this->signature << "\n";
+	//fflush(stdout);
+
+	//cout << "Pkey: " << this->pubKey << "\n";
+	//fflush(stdout);
+
+	if (!validateNodeNode(message, this->pubKey, this->signature, this->return_node_id))
+	{
+		assert(0);
+		return false;
+	}
+
+#endif */
+
+	return true;
+}
 
 /**************************************************/
 
