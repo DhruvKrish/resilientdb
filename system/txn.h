@@ -21,6 +21,12 @@ public:
     void reset(uint64_t pool_id);
     void release(uint64_t pool_id);
     txnid_t txn_id;
+    //Transaction ID of the reference committee for a cross shard transaction.
+    txnid_t txn_id_RC;
+    //Flag to check if transacation is cross sharded
+    bool cross_shard_txn;
+    //List of shards involved in the transaction
+    Array<uint64_t> shards_involved;
     uint64_t batch_id;
     RC rc;
 };
@@ -95,6 +101,20 @@ public:
     Workload *get_wl();
     void set_txn_id(txnid_t txn_id);
     txnid_t get_txn_id();
+    //set correspoding txn_id of Reference Committee
+    void set_txn_id_RC(txnid_t txn_id_RC);
+    //get correspoding txn_id of Reference Committee
+    txnid_t get_txn_id_RC();
+    //set cross_shard_txn flag
+    void set_cross_shard_txn();
+    //check if cross_shard_txn flag is set
+    bool get_cross_shard_txn();
+    //Initialize list of shards involved in the transaction with a capacity
+    void init_shards_involved(uint64_t capacity);
+    //Add a shard to the list of shards involved in the transaction
+    void set_shards_involved(uint64_t shard_number);
+    //get shards_involved array
+    Array<uint64_t> get_shards_involved();
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();
@@ -142,6 +162,30 @@ public:
 
     bool prepared = false;
     uint64_t cbatch;
+
+    //Counters of 2PC messages
+    uint64_t TwoPC_Request_cnt;
+    uint64_t TwoPC_Vote_cnt;
+    uint64_t TwoPC_Commit_cnt;
+    //Flag to check if 2PC messages received
+    bool TwoPC_Request_recvd;
+    bool TwoPC_Vote_recvd;
+    bool TwoPC_Commit_recvd;
+
+    uint64_t decr_2PC_Request_cnt();
+    uint64_t get_2PC_Request_cnt();
+    bool is_2PC_Request_recvd();
+    void set_2PC_Request_recvd();
+
+    uint64_t decr_2PC_Vote_cnt();
+    uint64_t get_2PC_Vote_cnt();
+    bool is_2PC_Vote_recvd();
+    void set_2PC_Vote_recvd();
+
+    uint64_t decr_2PC_Commit_cnt();
+    uint64_t get_2PC_Commit_cnt();
+    bool is_2PC_Commit_recvd();
+    void set_2PC_Commit_recvd();
 
     uint64_t prep_rsp_cnt;
     vector<uint64_t> info_prepare;

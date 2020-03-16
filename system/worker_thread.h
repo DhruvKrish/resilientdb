@@ -15,6 +15,7 @@ public:
     void setup();
     void send_key();
     RC process_key_exchange(Message *msg);
+    RC create_and_send_PREPARE_2PC(Message *msg);
 
     void process(Message *msg);
     TxnManager *get_transaction_manager(uint64_t txn_id, uint64_t batch_id);

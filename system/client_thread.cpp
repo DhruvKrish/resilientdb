@@ -192,11 +192,12 @@ RC ClientThread::run()
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
 		//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
-		clqry->inter_shard_flag=true;
+		clqry->cross_shard_txn=true;
 		//All requests are shard transactions between shard numbers 1 and 2
 		clqry->shards_involved.init(3);
 		clqry->shards_involved.add((uint64_t)0);
 		clqry->shards_involved.add((uint64_t)1);
+
 
 		bmsg->cqrySet.add(clqry);
 		addMore++;
@@ -222,8 +223,9 @@ RC ClientThread::run()
 			emptyvec.push_back(bmsg->signature);
 
 			vector<uint64_t> dest;
+
 			//next_node_id should be the primary of the reference committee (assumed to be first shard)
-			//next_node_id = view_to_primary(get_view(), 0); //Passing node 0 as it is in the first shard
+			//next_node_id = view_to_primary(get_view(),0); //Passing node 0 as it is in the first shard
 			dest.push_back(next_node_id);
 			msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
 			dest.clear();

@@ -111,6 +111,7 @@ void Transaction::init()
 {
     txn_id = UINT64_MAX;
     batch_id = UINT64_MAX;
+    cross_shard_txn=false;
 
     reset(0);
 }
@@ -152,6 +153,15 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     commit_rsp_cnt = prep_rsp_cnt + 1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
+    //Counters of 2PC messages
+    TwoPC_Request_cnt=g_min_invalid_nodes+1;
+    TwoPC_Vote_cnt=g_min_invalid_nodes+1;
+    TwoPC_Commit_cnt=g_min_invalid_nodes+1;
+    //2PC messages received should be false initially
+    TwoPC_Request_recvd=false;
+    TwoPC_Vote_recvd=false;
+    TwoPC_Commit_recvd=false;
+
     batchreq = NULL;
 
     txn_stats.init();
@@ -181,6 +191,8 @@ void TxnManager::release(uint64_t pool_id)
     qry_pool.put(pool_id, query);
     query = NULL;
     txn_pool.put(pool_id, txn);
+    //Release shard list array if transaction was cross sharded
+    if(get_cross_shard_txn())txn->shards_involved.release();
     txn = NULL;
 
     txn_ready = true;
@@ -191,6 +203,15 @@ void TxnManager::release(uint64_t pool_id)
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
     commit_rsp_cnt = prep_rsp_cnt + 1;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
+    //Counters of 2PC messages
+    TwoPC_Request_cnt=g_min_invalid_nodes+1;
+    TwoPC_Vote_cnt=g_min_invalid_nodes+1;
+    TwoPC_Commit_cnt=g_min_invalid_nodes+1;
+    //2PC messages received should be false initially
+    TwoPC_Request_recvd=false;
+    TwoPC_Vote_recvd=false;
+    TwoPC_Commit_recvd=false;
+
     release_all_messages(tid);
 
     txn_stats.init();
@@ -265,6 +286,40 @@ void TxnManager::set_txn_id(txnid_t txn_id)
 txnid_t TxnManager::get_txn_id()
 {
     return txn->txn_id;
+}
+
+void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
+{
+    txn->txn_id_RC = txn_id_RC;
+}
+
+txnid_t TxnManager::get_txn_id_RC()
+{
+    return txn->txn_id_RC;
+}
+
+//set cross_shard_txn flag
+void TxnManager::set_cross_shard_txn(){
+    txn->cross_shard_txn=true;
+}
+
+//check if cross_shard_txn flag is set
+bool TxnManager::get_cross_shard_txn(){
+    return txn->cross_shard_txn;
+}
+
+//Initialize list of shards involved in the transaction with a capacity
+void TxnManager::init_shards_involved(uint64_t capacity){
+    txn->shards_involved.init(capacity);
+}
+
+//Add a shard to the list of shards involved in the transaction
+void TxnManager::set_shards_involved(uint64_t shard_number){
+    txn->shards_involved.add(shard_number);
+}
+
+Array<uint64_t> TxnManager::get_shards_involved(){
+    return txn->shards_involved;
 }
 
 Workload *TxnManager::get_wl()
@@ -415,6 +470,75 @@ uint64_t TxnManager::decr_commit_rsp_cnt()
 uint64_t TxnManager::get_commit_rsp_cnt()
 {
     return commit_rsp_cnt;
+}
+
+/*****************************/
+/*Helper functions for 2PC Message Processing*/
+
+//2PC Request Messages
+void TxnManager::set_2PC_Request_recvd()
+{
+    TwoPC_Request_recvd = true;
+}
+
+bool TxnManager::is_2PC_Request_recvd()
+{
+    return TwoPC_Request_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Request_cnt()
+{
+    TwoPC_Request_cnt--;
+    return TwoPC_Request_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Request_cnt()
+{
+    return TwoPC_Request_cnt;
+}
+
+//2PC Vote Messages
+void TxnManager::set_2PC_Vote_recvd()
+{
+    TwoPC_Vote_recvd = true;
+}
+
+bool TxnManager::is_2PC_Vote_recvd()
+{
+    return TwoPC_Vote_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Vote_cnt()
+{
+    TwoPC_Vote_cnt--;
+    return TwoPC_Vote_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Vote_cnt()
+{
+    return TwoPC_Vote_cnt;
+}
+
+//2PC Commit Messages
+void TxnManager::set_2PC_Commit_recvd()
+{
+    TwoPC_Commit_recvd = true;
+}
+
+bool TxnManager::is_2PC_Commit_recvd()
+{
+    return TwoPC_Commit_recvd;
+}
+
+uint64_t TxnManager::decr_2PC_Commit_cnt()
+{
+    TwoPC_Commit_cnt--;
+    return TwoPC_Commit_cnt;
+}
+
+uint64_t TxnManager::get_2PC_Commit_cnt()
+{
+    return TwoPC_Commit_cnt;
 }
 
 /*****************************/
