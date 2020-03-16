@@ -99,6 +99,12 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
             ((Vote_2PC *)msg)->sign(dest[i]);
             entry->allsign.push_back(msg->signature);
         }
+    case GLOBAL_COMMIT_2PC:
+        for (uint64_t i = 0; i < dest.size(); i++)
+        {
+            ((Global_Commit_2PC *)msg)->sign(dest[i]);
+            entry->allsign.push_back(msg->signature);
+        }
                
             
         break;
@@ -151,6 +157,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_COMMIT_MSG:
     case REQUEST_2PC:
     case VOTE_2PC:
+    case GLOBAL_COMMIT_2PC:
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
