@@ -248,7 +248,7 @@ public:
     uint64_t rc_txn_id;
 };
 
-class Vote_2PCBatch : public ClientQueryBatch
+class Vote_2PC : public ClientQueryBatch
 {
 public:
     void copy_from_buf(char *buf);
@@ -261,7 +261,11 @@ public:
 class Commit_2PC : public ClientQueryBatch
 {
 public:
-    //uint64_t rc_txn_id;
+    void copy_from_buf(char *buf);
+    void copy_to_buf(char *buf);
+    uint64_t get_size();
+            
+    uint64_t rc_txn_id;
 };
 
 class Abort_2PC : public ClientQueryBatch

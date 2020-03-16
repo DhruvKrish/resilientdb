@@ -124,7 +124,7 @@ Message *Message::create_message(RemReqType rtype)
 		msg = new Request_2PCBatch;
 		break;
 	case VOTE_2PC:
-		msg = new Vote_2PCBatch;
+		msg = new Vote_2PC;
 		break;
 	case COMMIT_2PC:
 		msg = new Commit_2PC;
@@ -329,7 +329,7 @@ void Message::release_message(Message *msg)
 	}
 	case VOTE_2PC:
 	{
-		Vote_2PCBatch *m_msg = (Vote_2PCBatch *)msg;
+		Vote_2PC *m_msg = (Vote_2PC *)msg;
 		m_msg->release();
 		delete m_msg;
 		break;
@@ -1164,7 +1164,7 @@ uint64_t Request_2PCBatch::get_size()
 	return size;
 }
 
-uint64_t Vote_2PCBatch::get_size()
+uint64_t Vote_2PC::get_size()
 {
 	uint64_t size = ClientQueryBatch::get_size();
 
@@ -1232,7 +1232,7 @@ void Request_2PCBatch::copy_from_buf(char *buf)
 	assert(ptr == get_size());
 }
 
-void Vote_2PCBatch::copy_from_buf(char *buf)
+void Vote_2PC::copy_from_buf(char *buf)
 {
 	ClientQueryBatch::copy_from_buf(buf);
 	uint64_t ptr = ClientQueryBatch::get_size();
@@ -1267,7 +1267,7 @@ void Request_2PCBatch::copy_to_buf(char *buf)
 	assert(ptr == get_size());
 }
 
-void Vote_2PCBatch::copy_to_buf(char *buf)
+void Vote_2PC::copy_to_buf(char *buf)
 {
 	ClientQueryBatch::copy_to_buf(buf);
 	uint64_t ptr = ClientQueryBatch::get_size();
