@@ -212,7 +212,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
         YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
-        clqry->return_node = g_node_id;
+        clqry->return_node = txn_man->client_id;
         rmsg->cqrySet.add(clqry);
                
     }
