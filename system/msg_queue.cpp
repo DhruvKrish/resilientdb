@@ -93,6 +93,12 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
             ((Request_2PCBatch *)msg)->sign(dest[i]);
             entry->allsign.push_back(msg->signature);
         }
+    case VOTE_2PC:
+        for (uint64_t i = 0; i < dest.size(); i++)
+        {
+            ((Vote_2PCBatch *)msg)->sign(dest[i]);
+            entry->allsign.push_back(msg->signature);
+        }
                
             
         break;
@@ -144,6 +150,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_PREP_MSG:
     case PBFT_COMMIT_MSG:
     case REQUEST_2PC:
+    case VOTE_2PC:
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
