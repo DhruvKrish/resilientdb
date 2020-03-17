@@ -170,6 +170,24 @@ void WorkerThread::process(Message *msg)
         break;
     case REQUEST_2PC:
         cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
+        //Only process message if node is primary of a shard
+        if(is_primary_node(get_thd_id(),g_node_id)) {
+            rc = process_request_2pc(msg);
+        }
+        break;
+    case VOTE_2PC:
+        cout<<"Recieved 2PC Vote in Node "<<g_node_id<<endl;
+        //Only process message if node is primary of a shard
+        if(is_primary_node(get_thd_id(),g_node_id)) {
+            rc = process_vote_2pc(msg);
+        }
+        break;
+    case GLOBAL_COMMIT_2PC:
+        cout<<"Recieved 2PC Global Commit in Node "<<g_node_id<<endl;
+        //Only process message if node is primary of a shard
+        if(is_primary_node(get_thd_id(),g_node_id)) {
+            rc = process_global_commit_2pc(msg);
+        }
         break;
     default:
         printf("Msg: %d\n", msg->get_rtype());
@@ -237,6 +255,10 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
             }             
         }  
         
+
+    //printf("Request_2PCBatch: TID:%ld : THD: %ld\n",rmsg->rc_txn_id, get_thd_id());
+    //fflush(stdout);
+
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), rmsg, emptyvec, dest);
 	dest.clear();

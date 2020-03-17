@@ -314,3 +314,23 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 
     return RCOK;
 }
+
+
+//Methods for 2PC message processing
+RC WorkerThread::process_request_2pc(Message *msg)
+{
+
+    return RCOK;
+}
+
+RC WorkerThread::process_vote_2pc(Message *msg)
+{
+
+    return RCOK;
+}
+
+RC WorkerThread::process_global_commit_2pc(Message *msg)
+{
+
+    return RCOK;
+}
