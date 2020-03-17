@@ -1428,6 +1428,7 @@ uint64_t BatchRequests::get_size()
 	}
 
 	size += sizeof(batch_size);
+	size += sizeof(rc_txn_id);
 
 	return size;
 }
@@ -1466,6 +1467,8 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	// Setting txn_id 2 less than the actual value.
 	this->txn_id = txn->get_txn_id() - 2;
 	this->batch_size = get_batch_size();
+	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
+	this->rc_txn_id=txn->get_txn_id_RC;
 
 	// Storing the representative hash of the batch.
 	this->hash = txn->hash;
@@ -1517,6 +1520,7 @@ void BatchRequests::copy_from_buf(char *buf)
 	ptr = buf_to_string(buf, ptr, hash, hashSize);
 
 	COPY_VAL(batch_size, buf, ptr);
+	COPY_VAL(rc_txn_id, buf, ptr);
 
 	assert(ptr == get_size());
 }
@@ -1549,6 +1553,7 @@ void BatchRequests::copy_to_buf(char *buf)
 	}
 
 	COPY_BUF(buf, batch_size, ptr);
+	COPY_BUF(buf, rc_txn_id, ptr);
 
 	assert(ptr == get_size());
 }
