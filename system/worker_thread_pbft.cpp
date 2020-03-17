@@ -319,6 +319,16 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 //Methods for 2PC message processing
 RC WorkerThread::process_request_2pc(Message *msg)
 {
+    Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
+
+    //printf("Request_2PCBatch: %ld, THD: %ld :: From node: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->return_node_id, req2PC->cqrySet[0]->requests[0]->key);
+    //fflush(stdout);
+
+    // Authenticate the reference committee signature.
+    //validate_msg(req2PC);
+
+    // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
+    create_and_send_batchreq(req2PC, req2PC->txn_id);
 
     return RCOK;
 }
