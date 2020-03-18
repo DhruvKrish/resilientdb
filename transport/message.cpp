@@ -1468,7 +1468,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	this->txn_id = txn->get_txn_id() - 2;
 	this->batch_size = get_batch_size();
 	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
-	this->rc_txn_id=txn->get_txn_id_RC;
+	this->rc_txn_id=txn->get_txn_id_RC();
 
 	// Storing the representative hash of the batch.
 	this->hash = txn->hash;
