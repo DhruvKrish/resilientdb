@@ -1462,6 +1462,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 
 	this->requestMsg[idx] = yqry;
 	this->index.add(txnid);
+	this->rc_txn_id=txn->get_txn_id_RC();
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn)

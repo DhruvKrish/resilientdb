@@ -73,7 +73,7 @@ RC WorkerThread::process_batch(Message *msg)
 
     BatchRequests *breq = (BatchRequests *)msg;
 
-    //printf("BatchRequests: TID:%ld : VIEW: %ld : THD: %ld\n",breq->txn_id, breq->view, get_thd_id());
+    //printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
     //fflush(stdout);
 
     // Assert that only a non-primary replica has received this message.
@@ -319,7 +319,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 //Methods for 2PC message processing
 RC WorkerThread::process_request_2pc(Message *msg)
 {
-    ClientQueryBatch *req2PC = (ClientQueryBatch *)msg;
+    Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
 
     //printf("Request_2PCBatch: %ld, THD: %ld :: From node: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->return_node_id, req2PC->cqrySet[0]->requests[0]->key);
     //fflush(stdout);
