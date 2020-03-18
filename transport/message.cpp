@@ -1443,6 +1443,8 @@ void BatchRequests::init(uint64_t thd_id)
 
 	this->index.init(get_batch_size());
 	this->requestMsg.resize(get_batch_size());
+	//init rc_txn_id. Will be assigned a value only if cross shard transaxtion.
+	this->rc_txn_id=UINT64_MAX;
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry)
