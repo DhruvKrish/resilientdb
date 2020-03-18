@@ -319,7 +319,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 //Methods for 2PC message processing
 RC WorkerThread::process_request_2pc(Message *msg)
 {
-    Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
+    ClientQueryBatch *req2PC = (ClientQueryBatch *)msg;
 
     //printf("Request_2PCBatch: %ld, THD: %ld :: From node: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->return_node_id, req2PC->cqrySet[0]->requests[0]->key);
     //fflush(stdout);

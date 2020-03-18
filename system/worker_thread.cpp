@@ -1425,6 +1425,11 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 
         txn_man->register_thread(this);
         txn_man->return_id = msg->return_node;
+        //Assign rc_txn_id if msg is of Request_2PC type
+        if(msg->rtype == REQUEST_2PC){
+            Request_2PCBatch *reqmsg = (Request_2PCBatch *)msg;
+            breq->rc_txn_id = reqmsg->rc_txn_id;
+        }
 
         // Fields that need to updated according to the specific algorithm.
         algorithm_specific_update(msg, i);
