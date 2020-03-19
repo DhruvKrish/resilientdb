@@ -291,6 +291,7 @@ txnid_t TxnManager::get_txn_id()
 void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
 {
     txn->txn_id_RC = txn_id_RC;
+    txn->batch_id = txn_id_RC;
 }
 
 txnid_t TxnManager::get_txn_id_RC()

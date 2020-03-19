@@ -169,7 +169,7 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_commit_msg(msg);
         break;
     case REQUEST_2PC:
-        cout<<"Recieved 2PC Req in Node "<<g_node_id<<endl;
+        cout<<"Recieved 2PC Req in Node "<<g_node_id<<"from node:"<<msg->return_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_request_2pc(msg);
@@ -1428,7 +1428,7 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         //Assign rc_txn_id if msg is of Request_2PC type
         if(msg->rtype == REQUEST_2PC){
             Request_2PCBatch *reqmsg = (Request_2PCBatch *)msg;
-            breq->rc_txn_id = reqmsg->rc_txn_id;
+            txn_man->set_txn_id_RC(reqmsg->rc_txn_id);
         }
 
         // Fields that need to updated according to the specific algorithm.

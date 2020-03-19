@@ -73,8 +73,8 @@ RC WorkerThread::process_batch(Message *msg)
 
     BatchRequests *breq = (BatchRequests *)msg;
 
-    //printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
-    //fflush(stdout);
+    printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
+    fflush(stdout);
 
     // Assert that only a non-primary replica has received this message.
     assert(g_node_id != get_current_view(get_thd_id()));
