@@ -1657,3 +1657,36 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 
     return false;
 }
+
+bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
+    //cout << "Inside check_2pc_request_recvd for txn: " << txn_man->get_txn_id() << "\n";
+    //fflush(stdout);
+
+    // Once 2PC_Request is set, no processing for further messages of same txn_id.
+    if (txn_man->is_2PC_Request_recvd())
+    {
+        return false;
+    }
+
+    // Decrementing 2PC_Request_cnt
+    uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
+    //cout << "Request_2PC_Count: " << request_2pc_cnt << endl;
+    //fflush(stdout);
+    if (request_2pc_cnt == 0)
+    {
+        txn_man->set_2PC_Request_recvd();
+        return true;
+    }
+
+    return false;
+}
+
+bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
+
+    return false;
+}
+
+bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg){
+
+    return false;
+}

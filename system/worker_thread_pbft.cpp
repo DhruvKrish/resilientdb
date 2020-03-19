@@ -324,11 +324,15 @@ RC WorkerThread::process_request_2pc(Message *msg)
     //printf("Request_2PCBatch: %ld, THD: %ld :: From node: %ld :: RQ: %ld\n",msg->txn_id, get_thd_id(), msg->return_node_id, req2PC->cqrySet[0]->requests[0]->key);
     //fflush(stdout);
 
-    // Authenticate the reference committee signature.
-    //validate_msg(req2PC);
+    //Check if f+1 2PC Request messages received for this transacation.
+    if (check_2pc_request_recvd(req2PC))
+    {
+        //Authenticate the reference committee signature.
+        //validate_msg(req2PC);
 
-    // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
-    create_and_send_batchreq(req2PC, req2PC->txn_id);
+        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
+        create_and_send_batchreq(req2PC, req2PC->txn_id);
+    }
 
     return RCOK;
 }
