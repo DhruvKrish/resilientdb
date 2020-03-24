@@ -1429,6 +1429,9 @@ uint64_t BatchRequests::get_size()
 
 	size += sizeof(batch_size);
 	size += sizeof(rc_txn_id);
+	size += sizeof(TwoPC_Request_recvd);
+	size += sizeof(TwoPC_Vote_recvd);
+	size += sizeof(TwoPC_Commit_recvd);
 
 	return size;
 }
@@ -1443,8 +1446,11 @@ void BatchRequests::init(uint64_t thd_id)
 
 	this->index.init(get_batch_size());
 	this->requestMsg.resize(get_batch_size());
-	//init rc_txn_id. Will be assigned a value only if cross shard transaxtion.
-	this->rc_txn_id=UINT64_MAX;
+	//init rc_txn_id. Will be assigned a value only if cross shard transaction.
+	this->rc_txn_id = UINT64_MAX;
+	this->TwoPC_Request_recvd = false;
+	this->TwoPC_Vote_recvd = false;
+	this->TwoPC_Commit_recvd = false;
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry)
@@ -1462,7 +1468,11 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 
 	this->requestMsg[idx] = yqry;
 	this->index.add(txnid);
-	this->rc_txn_id=txn->get_txn_id_RC();
+	//Copy 2PC info
+	this->rc_txn_id = txn->get_txn_id_RC();
+	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
+	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
+	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn)
@@ -1472,6 +1482,10 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	this->batch_size = get_batch_size();
 	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
 	this->rc_txn_id=txn->get_txn_id_RC();
+	//Copy 2PC state info
+	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
+	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
+	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 
 	// Storing the representative hash of the batch.
 	this->hash = txn->hash;
@@ -1524,6 +1538,9 @@ void BatchRequests::copy_from_buf(char *buf)
 
 	COPY_VAL(batch_size, buf, ptr);
 	COPY_VAL(rc_txn_id, buf, ptr);
+	COPY_VAL(TwoPC_Request_recvd, buf, ptr);
+	COPY_VAL(TwoPC_Vote_recvd, buf, ptr);
+	COPY_VAL(TwoPC_Commit_recvd, buf, ptr);
 
 	assert(ptr == get_size());
 }
@@ -1557,6 +1574,9 @@ void BatchRequests::copy_to_buf(char *buf)
 
 	COPY_BUF(buf, batch_size, ptr);
 	COPY_BUF(buf, rc_txn_id, ptr);
+	COPY_BUF(buf, TwoPC_Request_recvd, ptr);
+	COPY_BUF(buf, TwoPC_Vote_recvd, ptr);
+	COPY_BUF(buf, TwoPC_Commit_recvd, ptr);
 
 	assert(ptr == get_size());
 }
