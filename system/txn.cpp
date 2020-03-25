@@ -111,6 +111,7 @@ void Transaction::init()
 {
     txn_id = UINT64_MAX;
     batch_id = UINT64_MAX;
+    txn_id_RC = UINT64_MAX;
     cross_shard_txn=false;
 
     reset(0);
