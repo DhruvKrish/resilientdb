@@ -132,6 +132,9 @@ Message *Message::create_message(RemReqType rtype)
 	case ABORT_2PC:
 		msg = new Abort_2PC;
 		break;
+	case CROSS_SHARD_EXECUTE:
+		msg = new CrossShardExcecuteMessage;
+		break;
 
 #if VIEW_CHANGES == true
 	case VIEW_CHANGE:

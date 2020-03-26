@@ -352,6 +352,11 @@ public:
     uint64_t batch_size;
 };
 
+class CrossShardExcecuteMessage : public ExecuteMessage
+{
+    public:
+};
+
 class CheckpointMessage : public Message
 {
 public:
