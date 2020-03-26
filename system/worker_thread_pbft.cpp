@@ -91,6 +91,11 @@ RC WorkerThread::process_batch(Message *msg)
     // Allocate transaction managers for all the transactions in the batch.
     set_txn_man_fields(breq, 0);
 
+    //Check txn_man
+    //printf("txn_man in process_batch: txn_id: %ld : rc_txn_id :%ld batch: %ld : THD: %ld\n",txn_man->get_txn_id(), 
+    //txn_man->get_txn_id_RC(),txn_man->get_batch_id(), get_thd_id());
+    //fflush(stdout);
+
 #if TIMER_ON
     // The timer for this client batch stores the hash of last request.
     add_timer(breq, txn_man->get_hash());
@@ -201,7 +206,9 @@ RC WorkerThread::process_batch(Message *msg)
  */
 RC WorkerThread::process_pbft_prep_msg(Message *msg)
 {
-    cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id << endl;
+    cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id 
+    << " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+    //cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
     fflush(stdout);
 
     // Start the counter for prepare phase.
@@ -244,7 +251,7 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
  */
 bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 {
-    //cout << "Check Commit: TID: " << txn_man->get_txn_id() << "\n";
+    //cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
     //fflush(stdout);
 
     // Once committed is set for this transaction, no further processing.
@@ -256,7 +263,7 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
     // If BatchRequests messages has not arrived, then hash is empty; return false.
     if (txn_man->get_hash().empty())
     {
-        //cout << "hash empty: " << txn_man->get_txn_id() << "\n";
+        //cout << "committed_local hash empty: " << txn_man->get_txn_id() << "\n";
         //fflush(stdout);
         txn_man->info_commit.push_back(msg->return_node);
         return false;
@@ -295,8 +302,9 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
  */
 RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
-    //cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << "\n";
-    //fflush(stdout);
+    cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+    " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+    fflush(stdout);
 
     if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes + 1)
     {

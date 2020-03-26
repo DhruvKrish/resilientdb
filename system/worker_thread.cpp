@@ -104,6 +104,10 @@ void WorkerThread::process(Message *msg)
         break;
     case EXECUTE_MSG:
         {
+            cout << "PBFTExecuteMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+            " batch_id :"<<msg->batch_id<< endl;
+            fflush(stdout);
+
         TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
         /*
         //Verifying that sharding information is persisted in Txn manager
@@ -944,9 +948,9 @@ RC WorkerThread::run()
         }
 
         // Based on the type of the message, we try acquiring the transaction manager.
-        if (msg->rtype != BATCH_REQ && msg->rtype != CL_BATCH && msg->rtype != EXECUTE_MSG && msg->rtype!=REQUEST_2PC)
+        if (msg->rtype != BATCH_REQ && msg->rtype != CL_BATCH && msg->rtype != EXECUTE_MSG && msg->rtype != REQUEST_2PC)
         {
-            txn_man = get_transaction_manager(msg->txn_id, 0);
+            txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
 
             ready_starttime = get_sys_clock();
             bool ready = txn_man->unset_ready();
@@ -1338,7 +1342,11 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
 {
     for (uint64_t i = 0; i < get_batch_size(); i++)
     {
-        txn_man = get_transaction_manager(breq->index[i], bid);
+        //If Request_2PC received in shard instead of Client_Batch, create last txn_man of batch with 2PC info
+        if(i==get_batch_size()-1 && breq->rc_txn_id!=0)
+            txn_man = get_transaction_manager(breq->index[i], breq->rc_txn_id);
+        else 
+            txn_man = get_transaction_manager(breq->index[i], bid);
 
         while (true)
         {
@@ -1380,13 +1388,17 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     }
 
     txn_man->set_hash(breq->hash);
-    //Set rc_txn_id and batch_id
-    //if(txn_man->get_cross_shard_txn()){
-    //    txn_man->set_txn_id_RC(breq->rc_txn_id);
-    //    txn_man->set_batch_id(breq->rc_txn_id);
-    //}
-    //Set 2PC state info
-    if(breq->TwoPC_Request_recvd) txn_man->set_2PC_Request_recvd();
+    
+    //Set 2PC state info accoring to 2PC flag set in BatchRequest
+    if(breq->TwoPC_Request_recvd){
+        txn_man->set_2PC_Request_recvd();
+        txn_man->set_batch_id(breq->rc_txn_id);
+        txn_man->set_txn_id_RC(breq->rc_txn_id);
+
+        /*cout<<"set_txn_man_fields from BatchRequest: "<<txn_man->get_txn_id()
+        <<" rc_txn_id: "<<txn_man->get_txn_id_RC()
+        <<" txn_man hash: "<<txn_man->get_hash()<<endl;*/
+    }
     if(breq->TwoPC_Vote_recvd) txn_man->set_2PC_Vote_recvd();
     if(breq->TwoPC_Commit_recvd) txn_man->set_2PC_Commit_recvd();
 }
@@ -1421,7 +1433,17 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 
         //cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
         //fflush(stdout);
-        txn_man = get_transaction_manager(txn_id, 0);
+
+        //If Request_2PC received instead of Client_Batch, create last txn_man of batch with 2PC info
+        if(i == get_batch_size()-1 && msg->rtype == REQUEST_2PC)
+        {
+            Request_2PCBatch *reqmsg = (Request_2PCBatch *)msg;
+            txn_man = get_transaction_manager(txn_id, reqmsg->rc_txn_id);
+            //cout<<"Set txn_man txn_id: "<<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()
+            //<<" 2pcRequestrecv: "<<txn_man->is_2PC_Request_recvd()<<endl;
+        }
+        else 
+            txn_man = get_transaction_manager(txn_id, 0);
 
         // Unset this txn man so that no other thread can concurrently use.
         while (true)
@@ -1494,15 +1516,13 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     txn_man->set_hash(calculateHash(batchStr));
     txn_man->hashSize = txn_man->hash.length();
 
-    //Set 2PC info to last txn_man of batch
-    if(msg->rtype == REQUEST_2PC){
-        Request_2PCBatch *reqmsg = (Request_2PCBatch *)msg;
-        txn_man->set_txn_id_RC(reqmsg->rc_txn_id);
-        txn_man->set_batch_id(reqmsg->rc_txn_id);
-        txn_man->set_2PC_Request_recvd();
-    }
-
     breq->copy_from_txn(txn_man);
+    //Check 2PC info in batch
+    /*if(msg->rtype == REQUEST_2PC){
+        cout<<"In create_and_send_batchreq. Batch txn_id: "<<breq->txn_id
+        <<" rc_txn_id: "<<breq->rc_txn_id<<" batch_id: "<<breq->batch_id
+        <<" 2pcRequestRecvd: "<<breq->TwoPC_Request_recvd<<endl;
+    }*/
 
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
@@ -1640,7 +1660,7 @@ bool WorkerThread::checkMsg(Message *msg)
  */
 bool WorkerThread::prepared(PBFTPrepMessage *msg)
 {
-    //cout << "Inside PREPARED: " << txn_man->get_txn_id() << "\n";
+    //cout << "Inside PREPARED: " << txn_man->get_txn_id() << " prep count: " << txn_man->get_prep_rsp_cnt()<<endl;
     //fflush(stdout);
 
     // Once prepared is set, no processing for further messages.
@@ -1652,6 +1672,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
     // If BatchRequests messages has not arrived yet, then return false.
     if (txn_man->get_hash().empty())
     {
+        //cout<<"Batchrequest not received txn_id: "<<txn_man->get_txn_id()<<endl;
         // Store the message.
         txn_man->info_prepare.push_back(msg->return_node);
         return false;

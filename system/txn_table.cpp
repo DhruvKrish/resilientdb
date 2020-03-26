@@ -36,8 +36,17 @@ void TxnTable::free()
 
 bool TxnTable::is_matching_txn_node(txn_node_t t_node, uint64_t txn_id, uint64_t batch_id)
 {
+    /*cout<<"Inside is_matching_txn_node t_node: "<<t_node->txn_man->get_txn_id()<<" txn_id: "
+    <<txn_id<<" txn_node batch_id: "<<t_node->txn_man->get_batch_id()
+    <<" batch_id: "<<batch_id<<endl;
+    fflush(stdout);*/
+
     assert(t_node);
-    return (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id);
+    //This is a 2PC status check. Each batch is mapped to a batch_id that is contained in one txn_man per batch.
+    if(batch_id != 0) 
+        return (t_node->txn_man->get_batch_id() == batch_id);
+    else 
+        return (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id);
 }
 
 void TxnTable::update_min_ts(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t ts)
@@ -89,8 +98,10 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
     {
         if (is_matching_txn_node(t_node, txn_id, batch_id))
         {
-            //cout<<"Found txn manager: "<<t_node->txn_man->get_txn_id()<<" batch_id:"<<t_node->txn_man->get_batch_id()<<endl;
-            //fflush(stdout);
+            /*cout<<"Found txn manager: "<<t_node->txn_man->get_txn_id()<<" batch_id: "<<t_node->txn_man->get_batch_id()
+            <<" rc_txn_id: "<<t_node->txn_man->get_txn_id_RC()<<" is2PCReqrecvd: "
+            <<t_node->txn_man->is_2PC_Request_recvd()<<endl;
+            fflush(stdout);*/
             // Transaction manager found.
             txn_man = t_node->txn_man;
             break;
@@ -115,6 +126,11 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         // Set fields for txn manager.
         txn_man->set_txn_id(txn_id);
         txn_man->set_batch_id(batch_id);
+        txn_man->set_txn_id_RC(batch_id);
+
+        //Set 2PC Request Received flag if txn is cross sharded.
+        //We will only create a txn_man when shards receive 2PC_Request.
+        if(txn_man->get_txn_id_RC() != 0) txn_man->set_2PC_Request_recvd();
 
         t_node->txn_man = txn_man;
         txn_man->txn_stats.starttime = get_sys_clock();
@@ -126,8 +142,10 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         ++pool[pool_id]->cnt;
         INC_STATS(thd_id, txn_table_new_cnt, 1);
 
-        //cout<<"Created new txnmanager for txn:"<<t_node->txn_man->get_txn_id()<<" and batch_id:"<<t_node->txn_man->get_batch_id()<<" t_node counts:"<<pool[pool_id]->cnt<<endl;
-        //fflush(stdout);
+        /*cout<<"Created new txnmanager for txn: "<<t_node->txn_man->get_txn_id()<<" and batch_id: "
+        <<t_node->txn_man->get_batch_id()<<" t_node counts: "<<pool[pool_id]->cnt
+        <<" 2pc_request_recvd: "<<txn_man->is_2PC_Request_recvd()<<endl;
+        fflush(stdout);*/
 
         // unset modify bit for this pool: Unlock.
         ATOM_CAS(pool[pool_id]->modify, true, false);
