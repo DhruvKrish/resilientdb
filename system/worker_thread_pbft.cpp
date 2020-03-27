@@ -329,8 +329,15 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
             <<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
-        // Add this message to execute thread's queue.
-        send_execute_msg();
+    if(g_node_id < g_shard_size && txn_man->get_cross_shard_txn() && !txn_man ->is_2PC_Vote_recvd())
+    {
+        send_cross_shard_execute_msg();
+    }
+    else
+    {
+       // Add this message to execute thread's queue.
+        send_execute_msg();  
+    }
 
         INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
     }

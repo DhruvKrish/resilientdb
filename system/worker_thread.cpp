@@ -102,61 +102,21 @@ void WorkerThread::process(Message *msg)
     case PBFT_CHKPT_MSG:
         rc = process_pbft_chkpt_msg(msg);
         break;
-    case EXECUTE_MSG:
+    case CROSS_SHARD_EXECUTE:
         {
-            cout << "PBFTExecuteMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-            " batch_id :"<<msg->batch_id<< endl;
-            fflush(stdout);
-
-        TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
-        /*
-        //Verifying that sharding information is persisted in Txn manager
-        cout<< "In Execute:"<<endl;
-        
-        if(txn_man->return_id >= g_node_cnt){
-        cout<< "Client request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
-        }
-        cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
-        Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
-        cout<<"Shards Involved list : "<<endl;
-        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
-        {
-        cout<<shards_involved_in_txn[i]<<endl;
-        }
-        */
-        Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-
+        cout<<"Received Cross Shard Execute"<<endl;
+       
         //if current node is reference committee, phase -> Cross shard transaction recieved from client  
         if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd && is_primary_node(get_thd_id(),g_node_id))
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
         }
-        //If current node is reference commitee & 2PC_Vote received from another shard
-        else if(g_node_id < g_shard_size && txn_man->return_id>=g_shard_size && txn_man->return_id<g_node_cnt
-             && txn_man->TwoPC_Vote_recvd) 
-        {
-            //create and send global commit/abort to shards involved
-            create_and_send_global_commit(msg);
-            
-            //if ref committee also part of shards involved, then execute
-            if(shardsInvolved.contains(0))
-            {
-            rc = process_execute_msg(msg); 
-            }
-        }
-        //if current node is in one of the shards and had recieved Request_2PC from reference commitee
-        else if(g_node_id>=g_shard_size && g_node_id<g_node_cnt && txn_man->return_id < g_shard_size && 
-                txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Commit_recvd)
-        {
-            create_and_send_Vote_2PC(msg);
-        }
-        else //Intra shard : regular Execution
-        {
-        rc = process_execute_msg(msg);
-        }
         break;
         }
+    case EXECUTE_MSG:
+        rc = process_execute_msg(msg);
+        break;
 #if VIEW_CHANGES
     case VIEW_CHANGE:
         rc = process_view_change_msg(msg);
@@ -218,18 +178,15 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
     //Lock the transaction Manager
 
-    while (true)
-        {
-            bool ready = txn_man->unset_ready();
+   bool ready = txn_man->unset_ready();
             if (!ready)
             {
-                continue;
+                //cout << "Placing: Txn: " << msg->txn_id << " Type: " << msg->rtype << "\n";
+                //fflush(stdout);
+                // Return to work queue, end processing
+                work_queue.enqueue(get_thd_id(), msg, true);
+                return RCOK;
             }
-            else
-            {
-                break;
-            }
-        }
 
    
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
@@ -243,9 +200,20 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 	vector<uint64_t> dest;
     Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
 
-    // Reset this txn manager.
-        bool ready = txn_man->set_ready();
-        assert(ready);
+    if (txn_man)
+        {
+            bool ready = txn_man->set_ready();
+            if (!ready)
+            {
+                cout << "FAILed to set txn man to ready: " << txn_man->get_txn_id() << " :: RT: " << msg->rtype << "\n";
+                fflush(stdout);
+                assert(ready);
+            }
+        }
+
+   /*  // Reset this txn manager.
+    bool ready = txn_man->set_ready();
+    assert(ready); */
     //populating destination array to send to invloved shards
     for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
@@ -926,7 +894,7 @@ RC WorkerThread::run()
             idle_starttime = 0;
         }
 
-#if VIEW_CHANGES
+        #if VIEW_CHANGES
         // Ensure that thread 0 of the primary never processes ClientQueryBatch.
         if (g_node_id == get_current_view(get_thd_id()))
         {
@@ -955,7 +923,7 @@ RC WorkerThread::run()
             ready_starttime = get_sys_clock();
             bool ready = txn_man->unset_ready();
             if (!ready)
-            {
+            { 
                 //cout << "Placing: Txn: " << msg->txn_id << " Type: " << msg->rtype << "\n";
                 //fflush(stdout);
                 // Return to work queue, end processing
@@ -1057,6 +1025,15 @@ void WorkerThread::send_execute_msg()
 {
     Message *tmsg = Message::create_message(txn_man, EXECUTE_MSG);
     work_queue.enqueue(get_thd_id(), tmsg, false);
+}
+
+/**
+ * Create an message of type CrossShardExecuteMessage, to send cross shard messages to other shards
+ */
+void WorkerThread::send_cross_shard_execute_msg()
+{
+    Message *tmsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+    work_queue.enqueue(get_thd_id(), tmsg, false); 
 }
 
 /**

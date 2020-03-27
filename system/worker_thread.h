@@ -47,6 +47,8 @@ public:
     RC process_execute_msg(Message *msg);
 #endif
 
+    void send_cross_shard_execute_msg();
+
 #if TIMER_ON
     void add_timer(Message *msg, string qryhash);
 #endif
