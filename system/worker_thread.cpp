@@ -105,28 +105,6 @@ void WorkerThread::process(Message *msg)
     case CROSS_SHARD_EXECUTE:
         {
         cout<<"Received Cross Shard Execute"<<endl;
-            //cout << "PBFTExecuteMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-            //" batch_id :"<<msg->batch_id<< endl;
-            //fflush(stdout);
-
-        TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
-        /*
-        //Verifying that sharding information is persisted in Txn manager
-        cout<< "In Execute:"<<endl;
-        
-        if(txn_man->return_id >= g_node_cnt){
-        cout<< "Client request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
-        }
-        cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
-        Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
-        cout<<"Shards Involved list : "<<endl;
-        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
-        {
-        cout<<shards_involved_in_txn[i]<<endl;
-        }
-        */
-        Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-        //if current node is reference committee, phase -> Cross shard transaction recieved from client  
         if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd && is_primary_node(get_thd_id(),g_node_id))
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
