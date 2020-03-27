@@ -163,7 +163,7 @@ Message *Message::create_message(RemReqType rtype)
 	assert(msg);
 	msg->rtype = rtype;
 	msg->txn_id = UINT64_MAX;
-	msg->batch_id = UINT64_MAX;
+	msg->batch_id = 0;
 	msg->return_node_id = g_node_id;
 	msg->wq_time = 0;
 	msg->mq_time = 0;
@@ -185,6 +185,8 @@ uint64_t Message::mget_size()
 	uint64_t size = 0;
 	size += sizeof(RemReqType);
 	size += sizeof(uint64_t);
+	//Size for batch_id
+	size += sizeof(uint64_t);
 
 	// for stats, send message queue time
 	size += sizeof(uint64_t);
@@ -201,6 +203,7 @@ uint64_t Message::mget_size()
 void Message::mcopy_from_txn(TxnManager *txn)
 {
 	txn_id = txn->get_txn_id();
+	batch_id = txn->get_batch_id();
 }
 
 void Message::mcopy_to_txn(TxnManager *txn)
@@ -213,6 +216,7 @@ void Message::mcopy_from_buf(char *buf)
 	uint64_t ptr = 0;
 	COPY_VAL(rtype, buf, ptr);
 	COPY_VAL(txn_id, buf, ptr);
+	COPY_VAL(batch_id, buf, ptr);
 	COPY_VAL(mq_time, buf, ptr);
 
 	COPY_VAL(lat_work_queue_time, buf, ptr);
@@ -255,6 +259,7 @@ void Message::mcopy_to_buf(char *buf)
 	uint64_t ptr = 0;
 	COPY_BUF(buf, rtype, ptr);
 	COPY_BUF(buf, txn_id, ptr);
+	COPY_BUF(buf, batch_id, ptr);
 	COPY_BUF(buf, mq_time, ptr);
 
 	COPY_BUF(buf, lat_work_queue_time, ptr);
@@ -1448,6 +1453,10 @@ uint64_t BatchRequests::get_size()
 	}
 
 	size += sizeof(batch_size);
+	size += sizeof(rc_txn_id);
+	size += sizeof(TwoPC_Request_recvd);
+	size += sizeof(TwoPC_Vote_recvd);
+	size += sizeof(TwoPC_Commit_recvd);
 
 	return size;
 }
@@ -1462,6 +1471,14 @@ void BatchRequests::init(uint64_t thd_id)
 
 	this->index.init(get_batch_size());
 	this->requestMsg.resize(get_batch_size());
+	//init rc_txn_id. Will be assigned a value only if cross shard transaction.
+	this->rc_txn_id = UINT64_MAX;
+	//batch_id is 0 by default (for non-cross sharded transactions)
+	//For cross sharded transactions, batch_id != 0
+	this->batch_id = 0;
+	this->TwoPC_Request_recvd = false;
+	this->TwoPC_Vote_recvd = false;
+	this->TwoPC_Commit_recvd = false;
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry)
@@ -1479,6 +1496,12 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 
 	this->requestMsg[idx] = yqry;
 	this->index.add(txnid);
+	//Copy 2PC info
+	this->rc_txn_id = txn->get_txn_id_RC();
+	this->batch_id = txn->get_batch_id();
+	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
+	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
+	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn)
@@ -1486,6 +1509,13 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	// Setting txn_id 2 less than the actual value.
 	this->txn_id = txn->get_txn_id() - 2;
 	this->batch_size = get_batch_size();
+	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
+	this->rc_txn_id = txn->get_txn_id_RC();
+	this->batch_id = txn->get_batch_id();
+	//Copy 2PC state info
+	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
+	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
+	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 
 	// Storing the representative hash of the batch.
 	this->hash = txn->hash;
@@ -1537,6 +1567,10 @@ void BatchRequests::copy_from_buf(char *buf)
 	ptr = buf_to_string(buf, ptr, hash, hashSize);
 
 	COPY_VAL(batch_size, buf, ptr);
+	COPY_VAL(rc_txn_id, buf, ptr);
+	COPY_VAL(TwoPC_Request_recvd, buf, ptr);
+	COPY_VAL(TwoPC_Vote_recvd, buf, ptr);
+	COPY_VAL(TwoPC_Commit_recvd, buf, ptr);
 
 	assert(ptr == get_size());
 }
@@ -1569,6 +1603,10 @@ void BatchRequests::copy_to_buf(char *buf)
 	}
 
 	COPY_BUF(buf, batch_size, ptr);
+	COPY_BUF(buf, rc_txn_id, ptr);
+	COPY_BUF(buf, TwoPC_Request_recvd, ptr);
+	COPY_BUF(buf, TwoPC_Vote_recvd, ptr);
+	COPY_BUF(buf, TwoPC_Commit_recvd, ptr);
 
 	assert(ptr == get_size());
 }

@@ -329,6 +329,12 @@ public:
     uint64_t hashSize; // Representative hash for the batch.
     string hash;
     uint32_t batch_size;
+    //Corresponding txn_id for Reference Committee in cross sharded transactions
+    uint64_t rc_txn_id;
+    //Information about 2PC state of batch
+    bool TwoPC_Request_recvd;
+    bool TwoPC_Vote_recvd;
+    bool TwoPC_Commit_recvd;
 };
 
 class ExecuteMessage : public Message
