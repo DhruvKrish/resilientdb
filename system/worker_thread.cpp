@@ -103,8 +103,17 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case CROSS_SHARD_EXECUTE:
+        {
         cout<<"Received Cross Shard Execute"<<endl;
+       
+        //if current node is reference committee, phase -> Cross shard transaction recieved from client  
+        if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd)
+        {
+           //create and send PREPARE_2PC_REQ message to the shards involved
+           create_and_send_PREPARE_2PC(msg);
+        }
         break;
+        }
     case EXECUTE_MSG:
         rc = process_execute_msg(msg);
         break;
