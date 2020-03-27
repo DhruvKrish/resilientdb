@@ -341,6 +341,7 @@ void set_newView(uint64_t thd_id, bool val)
 }
 #endif
 
+std::unordered_map<uint64_t, int> count_2PC_request;
 // Size of the batch
 uint64_t g_batch_size = BATCH_SIZE;
 uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];

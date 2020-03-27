@@ -105,7 +105,27 @@ void WorkerThread::process(Message *msg)
     case CROSS_SHARD_EXECUTE:
         {
         cout<<"Received Cross Shard Execute"<<endl;
-       
+            //cout << "PBFTExecuteMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+            //" batch_id :"<<msg->batch_id<< endl;
+            //fflush(stdout);
+
+        TxnManager *txn_man = get_transaction_manager(msg->txn_id, 0);
+        /*
+        //Verifying that sharding information is persisted in Txn manager
+        cout<< "In Execute:"<<endl;
+        
+        if(txn_man->return_id >= g_node_cnt){
+        cout<< "Client request originated from:"<<txn_man->return_id - g_node_cnt<<endl;
+        }
+        cout<<"Cross shard? : "<<txn_man->get_cross_shard_txn()<<endl;
+        Array<uint64_t> shards_involved_in_txn= txn_man->get_shards_involved();
+        cout<<"Shards Involved list : "<<endl;
+        for ( uint64_t i =0; i<shards_involved_in_txn.size();i++)
+        {
+        cout<<shards_involved_in_txn[i]<<endl;
+        }
+        */
+        Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
         //if current node is reference committee, phase -> Cross shard transaction recieved from client  
         if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd && is_primary_node(get_thd_id(),g_node_id))
         {
@@ -132,24 +152,24 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_commit_msg(msg);
         break;
     case REQUEST_2PC:
-        cout<<"Recieved 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
+        cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         fflush(stdout);
         //Only process message if node is primary of a shard
-        if(is_primary_node(get_thd_id(),g_node_id)) {
+        if(is_primary_node(get_thd_id(), g_node_id)) {
             rc = process_request_2pc(msg);
         }
         break;
     case VOTE_2PC:
-        cout<<"Recieved 2PC Vote in Node "<<g_node_id<<endl;
+        cout<<"Received 2PC Vote in Node "<<g_node_id<<endl;
         //Only process message if node is primary of a shard
-        if(is_primary_node(get_thd_id(),g_node_id)) {
+        if(is_primary_node(get_thd_id(), g_node_id)) {
             rc = process_vote_2pc(msg);
         }
         break;
     case GLOBAL_COMMIT_2PC:
-        cout<<"Recieved 2PC Global Commit in Node "<<g_node_id<<endl;
+        cout<<"Received 2PC Global Commit in Node "<<g_node_id<<endl;
         //Only process message if node is primary of a shard
-        if(is_primary_node(get_thd_id(),g_node_id)) {
+        if(is_primary_node(get_thd_id(), g_node_id)) {
             rc = process_global_commit_2pc(msg);
         }
         break;
@@ -1677,16 +1697,32 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 }
 
 bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
-    //cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    //fflush(stdout);
+    cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
+    fflush(stdout);
 
     // Once 2PC_Request is set, no processing for further messages of same txn_id.
-    if (txn_man->is_2PC_Request_recvd())
-    {
-        return false;
+    
+    cout << "RC_TXN_ID: " << msg->rc_txn_id << endl;
+    
+    // Set count to f, if rc_txn_id not found, else decrement it by 1
+    if(count_2PC_request.find(msg->rc_txn_id) == count_2PC_request.end()) {
+        cout << "Setting count to: " << g_min_invalid_nodes << endl;
+        count_2PC_request[msg->rc_txn_id] = g_min_invalid_nodes;
+    }
+    else {
+        cout << "Decrementing count from: " << count_2PC_request[msg->rc_txn_id] << endl;
+        count_2PC_request[msg->rc_txn_id]--;
+        cout << " To: " << count_2PC_request[msg->rc_txn_id] << endl;
     }
 
-    // Decrementing 2PC_Request_cnt
+    // If count becomes 0, then clear the table and return true
+    if(count_2PC_request.find(msg->rc_txn_id) != count_2PC_request.end() && count_2PC_request[msg->rc_txn_id] == 0) {
+        cout << "Condition satisfied " << endl;
+        count_2PC_request.erase(msg->rc_txn_id);
+        return true;
+    }
+
+    /* // Decrementing 2PC_Request_cnt
     uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
     //cout << "Request_2PC_Count: " << request_2pc_cnt << endl;
     //fflush(stdout);
@@ -1694,7 +1730,7 @@ bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
     {
         txn_man->set_2PC_Request_recvd();
         return true;
-    }
+    } */
 
     return false;
 }

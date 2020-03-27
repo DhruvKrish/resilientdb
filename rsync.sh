@@ -1,5 +1,5 @@
 #!/bin/bash
-ip="35.188.181.155"
+ip="34.68.112.72"
 #rsync -av -e "ssh -i ~/.ssh/google_compute_engine" deps/ expo@$ip:resilientdb/deps;
 rsync -av -e "ssh -i ~/.ssh/google_compute_engine" transport/ expo@$ip:resilientdb/transport;
 rsync -av -e "ssh -i ~/.ssh/google_compute_engine" system/ expo@$ip:resilientdb/system;

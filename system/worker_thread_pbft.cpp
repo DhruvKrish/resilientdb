@@ -73,9 +73,9 @@ RC WorkerThread::process_batch(Message *msg)
 
     BatchRequests *breq = (BatchRequests *)msg;
 
-    printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
-    if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-    fflush(stdout);
+    //printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
+    //if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+    //fflush(stdout);
 
     // Assert that only a non-primary replica has received this message.
     assert(g_node_id != get_current_view(get_thd_id()));
@@ -206,10 +206,10 @@ RC WorkerThread::process_batch(Message *msg)
  */
 RC WorkerThread::process_pbft_prep_msg(Message *msg)
 {
-    cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id 
-    << " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+    //cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id 
+    //<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
     //cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
-    fflush(stdout);
+    //fflush(stdout);
 
     // Start the counter for prepare phase.
     if (txn_man->prep_rsp_cnt == 2 * g_min_invalid_nodes)
@@ -302,9 +302,9 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
  */
 RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
-    cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-    " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-    fflush(stdout);
+    //cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+    //" batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+    //fflush(stdout);
 
     if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes + 1)
     {

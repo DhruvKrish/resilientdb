@@ -109,11 +109,11 @@ void InputThread::setup()
                     {
                         msg->txn_id = get_and_inc_next_idx();
                     }
-                    if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
+                    if(msg->rtype == REQUEST_2PC)
                     {
                         msg->txn_id = get_and_inc_next_idx();
-                        //cout<<"2PC Request in input thread setup txn_id: "<<msg->txn_id<<" from node:"<<msg->return_node_id<<endl;
-                        //fflush(stdout);
+                        cout<<"2PC Request in input thread setup txn_id: "<<msg->txn_id<<" from node:"<<msg->return_node_id<<endl;
+                        fflush(stdout);
                     }
 
                     work_queue.enqueue(get_thd_id(), msg, false);

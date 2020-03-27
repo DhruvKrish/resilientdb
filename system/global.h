@@ -308,6 +308,11 @@ bool is_primary_node(uint64_t thd_id, uint64_t node = g_node_id);
 // end of new methods 
 /*********************************************/
 
+// Hashtable for counting 2PC Request Messages at the primary of a shard
+extern std::unordered_map<uint64_t, int> count_2PC_request;
+// Hashtable for counting 2PC Vote Messages from 
+//extern std::unordered_map<uint64_t, > count_2PC_vote; 
+
 extern std::mutex keyMTX;
 extern bool keyAvail;
 extern uint64_t totKey;
