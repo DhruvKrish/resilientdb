@@ -225,8 +225,8 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
     if (prepared(pmsg))
     {
         if(txn_man->is_2PC_Request_recvd())
-            cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;
+            //cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
+            //<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
         // Send Commit messages.
@@ -325,8 +325,8 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         server_timer->endTimer(txn_man->hash);
 #endif
         if(txn_man->is_2PC_Request_recvd())
-            cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;
+            //cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
+            //<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
     if(g_node_id < g_shard_size && txn_man->get_cross_shard_txn() && !txn_man ->is_2PC_Vote_recvd())
@@ -351,18 +351,18 @@ RC WorkerThread::process_request_2pc(Message *msg)
 {
     Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
 
-    printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
-    fflush(stdout);
+    /* printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n", req2PC->txn_id, get_thd_id(), msg->return_node_id ,req2PC->rc_txn_id);
+    fflush(stdout); */
 
-    //Check if f+1 2PC Request messages received for this transacation.
-    //if (check_2pc_request_recvd(req2PC))
-    //{
+    //Check if f+1 2PC Request messages received for this transaction.
+    if (check_2pc_request_recvd(req2PC))
+    {
         //Authenticate the reference committee signature.
         //validate_msg(req2PC);
 
         // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
         create_and_send_batchreq(req2PC, req2PC->txn_id);
-    //}
+    }
 
     return RCOK;
 }

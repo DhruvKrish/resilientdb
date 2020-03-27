@@ -111,9 +111,9 @@ void InputThread::setup()
                     }
                     if(msg->rtype == REQUEST_2PC)
                     {
-                        msg->txn_id = get_and_inc_next_idx();
                         cout<<"2PC Request in input thread setup txn_id: "<<msg->txn_id<<" from node:"<<msg->return_node_id<<endl;
                         fflush(stdout);
+                        msg->txn_id = get_and_inc_next_idx();
                     }
 
                     work_queue.enqueue(get_thd_id(), msg, false);
@@ -360,7 +360,7 @@ RC InputThread::server_recv_loop()
                 msg->txn_id = get_and_inc_next_idx();
                 INC_STATS(_thd_id, msg_cl_in, 1);
             }
-            if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
+            if(msg->rtype == REQUEST_2PC)
             {
                 msg->txn_id = get_and_inc_next_idx();
                 //cout<<"2PC Request in input thread server receive txn_id: "<<msg->txn_id<<"from node:"<<msg->return_node_id<<endl;

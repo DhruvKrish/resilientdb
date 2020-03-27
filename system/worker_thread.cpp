@@ -104,8 +104,9 @@ void WorkerThread::process(Message *msg)
         break;
     case CROSS_SHARD_EXECUTE:
         {
-        cout<<"Received Cross Shard Execute"<<endl;
-        if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd && is_primary_node(get_thd_id(),g_node_id))
+        //cout<<"Received Cross Shard Execute"<<endl;
+        // Removed condition check of only send to primary
+        if(txn_man->get_cross_shard_txn() && g_node_id < g_shard_size && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
@@ -130,8 +131,8 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_commit_msg(msg);
         break;
     case REQUEST_2PC:
-        cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
-        fflush(stdout);
+        /* cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id << endl;
+        fflush(stdout); */
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(), g_node_id)) {
             rc = process_request_2pc(msg);
@@ -1675,41 +1676,31 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
 }
 
 bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
-    cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    fflush(stdout);
-
-    // Once 2PC_Request is set, no processing for further messages of same txn_id.
-    
+    /* cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
     cout << "RC_TXN_ID: " << msg->rc_txn_id << endl;
+    fflush(stdout); */
     
     // Set count to f, if rc_txn_id not found, else decrement it by 1
     if(count_2PC_request.find(msg->rc_txn_id) == count_2PC_request.end()) {
-        cout << "Setting count to: " << g_min_invalid_nodes << endl;
+        /* cout << "Setting count to: " << g_min_invalid_nodes << endl;
+        fflush(stdout); */
         count_2PC_request[msg->rc_txn_id] = g_min_invalid_nodes;
     }
     else {
-        cout << "Decrementing count from: " << count_2PC_request[msg->rc_txn_id] << endl;
+        /* cout << "Decrementing count from: " << count_2PC_request[msg->rc_txn_id] << endl;
+        fflush(stdout); */
+        // Decrement count by 1
         count_2PC_request[msg->rc_txn_id]--;
-        cout << " To: " << count_2PC_request[msg->rc_txn_id] << endl;
+        /* cout << " To: " << count_2PC_request[msg->rc_txn_id] << endl;
+        fflush(stdout); */
     }
 
-    // If count becomes 0, then clear the table and return true
+    // If count becomes 0, then erase RC_TXN_ID from the table and return true
     if(count_2PC_request.find(msg->rc_txn_id) != count_2PC_request.end() && count_2PC_request[msg->rc_txn_id] == 0) {
-        cout << "Condition satisfied " << endl;
+        cout << "Received f + 1 for "<< msg->rc_txn_id << endl;
         count_2PC_request.erase(msg->rc_txn_id);
         return true;
     }
-
-    /* // Decrementing 2PC_Request_cnt
-    uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
-    //cout << "Request_2PC_Count: " << request_2pc_cnt << endl;
-    //fflush(stdout);
-    if (request_2pc_cnt == 0)
-    {
-        txn_man->set_2PC_Request_recvd();
-        return true;
-    } */
-
     return false;
 }
 
