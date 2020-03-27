@@ -133,7 +133,7 @@ Message *Message::create_message(RemReqType rtype)
 		msg = new Abort_2PC;
 		break;
 	case CROSS_SHARD_EXECUTE:
-		msg = new CrossShardExcecuteMessage;
+		msg = new CrossShardExecuteMessage;
 		break;
 
 #if VIEW_CHANGES == true
@@ -366,6 +366,23 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
+	case CROSS_SHARD_EXECUTE:
+	{
+		static int counter = 0;
+		//CrossShardExecuteMessage *m_msg = (CrossShardExecuteMessage *)msg;
+		CrossShardExecuteMessage *m_msg = dynamic_cast<CrossShardExecuteMessage*>(msg); // use dynamic cast to convert Base pointer into Derived pointer
+ 
+		try {
+			m_msg->release();
+		}
+		catch (...) {
+			cout<<"In exception:"<<endl;
+		}
+		delete m_msg;
+		counter++;
+		break;
+	}
+
 	case BATCH_REQ:
 	{
 		BatchRequests *m_msg = (BatchRequests *)msg;
@@ -1712,7 +1729,88 @@ void ExecuteMessage::copy_to_buf(char *buf)
 	assert(ptr == get_size());
 }
 
+
 /************************************/
+
+uint64_t CrossShardExecuteMessage::get_size()
+{
+	uint64_t size = Message::mget_size();
+
+	size += sizeof(view);
+	size += sizeof(index);
+	size += hash.length();
+	size += sizeof(hashSize);
+	size += sizeof(return_node);
+	size += sizeof(end_index);
+	size += sizeof(batch_size);
+
+	return size;
+}
+
+void CrossShardExecuteMessage::copy_from_txn(TxnManager *txn)
+{
+	// Constructing txn manager for one transaction less than end index.
+	this->txn_id = txn->get_txn_id() - 1;
+
+	this->view = get_current_view(txn->get_thd_id());
+	this->index = txn->get_txn_id() + 1 - get_batch_size();
+	this->end_index = txn->get_txn_id();
+	this->batch_size = get_batch_size();
+	this->hash = txn->get_hash();
+	this->hashSize = txn->get_hashSize();
+	this->return_node = g_node_id;
+}
+
+void CrossShardExecuteMessage::copy_to_txn(TxnManager *txn)
+{
+	Message::mcopy_to_txn(txn);
+}
+
+void CrossShardExecuteMessage::copy_from_buf(char *buf)
+{
+	Message::mcopy_from_buf(buf);
+
+	uint64_t ptr = Message::mget_size();
+
+	COPY_VAL(view, buf, ptr);
+	COPY_VAL(index, buf, ptr);
+	COPY_VAL(hashSize, buf, ptr);
+
+	ptr = buf_to_string(buf, ptr, hash, hashSize);
+
+	COPY_VAL(return_node, buf, ptr);
+	COPY_VAL(end_index, buf, ptr);
+	COPY_VAL(batch_size, buf, ptr);
+
+	assert(ptr == get_size());
+}
+
+void CrossShardExecuteMessage::copy_to_buf(char *buf)
+{
+	Message::mcopy_to_buf(buf);
+
+	uint64_t ptr = Message::mget_size();
+
+	COPY_BUF(buf, view, ptr);
+	COPY_BUF(buf, index, ptr);
+	COPY_BUF(buf, hashSize, ptr);
+
+	char v;
+	for (uint64_t i = 0; i < hash.size(); i++)
+	{
+		v = hash[i];
+		COPY_BUF(buf, v, ptr);
+	}
+
+	COPY_BUF(buf, return_node, ptr);
+	COPY_BUF(buf, end_index, ptr);
+	COPY_BUF(buf, batch_size, ptr);
+
+	assert(ptr == get_size());
+}
+
+
+/***********************************/
 
 uint64_t CheckpointMessage::get_size()
 {
