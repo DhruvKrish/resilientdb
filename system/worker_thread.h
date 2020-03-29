@@ -48,6 +48,10 @@ public:
 #endif
 
     void send_cross_shard_execute_msg();
+    RC process_cross_shard_execute_msg(Message *msg);
+
+    bool isRefCommittee();
+    bool isOtherShard();
 
 #if TIMER_ON
     void add_timer(Message *msg, string qryhash);
