@@ -206,8 +206,7 @@ RC WorkerThread::process_batch(Message *msg)
  */
 RC WorkerThread::process_pbft_prep_msg(Message *msg)
 {
-    cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id 
-    << " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+    //cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
     //cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
     fflush(stdout);
 
@@ -329,9 +328,14 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
             <<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
-    if(g_node_id < g_shard_size && txn_man->get_cross_shard_txn() && !txn_man ->is_2PC_Vote_recvd())
-    {
+    //cout<<"txnman->cs"<<txn_man->get_cross_shard_txn()<<endl;
+    if(txn_man->get_cross_shard_txn())
+    {      
         send_cross_shard_execute_msg();
+        if (txn_man ->is_2PC_Vote_recvd())
+        {
+            send_execute_msg();
+        }
     }
     else
     {

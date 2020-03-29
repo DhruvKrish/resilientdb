@@ -103,17 +103,9 @@ void WorkerThread::process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case CROSS_SHARD_EXECUTE:
-        {
         cout<<"Received Cross Shard Execute"<<endl;
-       
-        //if current node is reference committee, phase -> Cross shard transaction recieved from client  
-        if(txn_man->get_cross_shard_txn() && g_node_id<g_shard_size && !txn_man->TwoPC_Vote_recvd && is_primary_node(get_thd_id(),g_node_id))
-        {
-           //create and send PREPARE_2PC_REQ message to the shards involved
-           create_and_send_PREPARE_2PC(msg);
-        }
+        process_cross_shard_execute_msg(msg);
         break;
-        }
     case EXECUTE_MSG:
         rc = process_execute_msg(msg);
         break;
@@ -161,6 +153,51 @@ void WorkerThread::process(Message *msg)
     }
 }
 
+bool WorkerThread::isRefCommittee()
+{
+    if(g_node_id<g_shard_size)
+    {
+        return true;    
+    }
+    return false;
+}
+
+bool WorkerThread::isOtherShard()
+{
+    if(g_node_id>=g_shard_size && g_node_id<g_node_cnt )
+    {
+        return true;    
+    }
+    return false;
+}
+
+RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
+{
+
+        if(isOtherShard())
+        {
+            cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
+        }
+    //if current node is reference committee, phase -> Cross shard transaction recieved from client  
+        if(isRefCommittee() && is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+        {
+           //create and send PREPARE_2PC_REQ message to the shards involved
+           create_and_send_PREPARE_2PC(msg);
+        }
+        else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Commit_recvd)
+        {
+            cout<<"Checking if condtn"<<endl;
+            create_and_send_Vote_2PC(msg);
+        }
+        /* else if ()
+        {
+            //for Global commit
+        } */
+
+
+    return RCOK;
+}
+
 
 RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 {
@@ -175,10 +212,10 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     rmsg->rc_txn_id = emsg->end_index;
 
     //getting txn manager of the last transaction
-    TxnManager *txn_man = get_transaction_manager(emsg->end_index, 0);
+    //txn_man = get_transaction_manager(emsg->end_index, 0);
     //Lock the transaction Manager
 
-   bool ready = txn_man->unset_ready();
+   /* bool ready = txn_man->unset_ready();
             if (!ready)
             {
                 //cout << "Placing: Txn: " << msg->txn_id << " Type: " << msg->rtype << "\n";
@@ -186,7 +223,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
                 // Return to work queue, end processing
                 work_queue.enqueue(get_thd_id(), msg, true);
                 return RCOK;
-            }
+            } */
 
    
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
@@ -200,7 +237,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 	vector<uint64_t> dest;
     Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
 
-    if (txn_man)
+    /* if (txn_man)
         {
             bool ready = txn_man->set_ready();
             if (!ready)
@@ -210,7 +247,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
                 assert(ready);
             }
         }
-
+ */
    /*  // Reset this txn manager.
     bool ready = txn_man->set_ready();
     assert(ready); */
@@ -229,7 +266,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
         }  
         
 
-    //printf("Sending Request_2PCBatch: TID:%ld : THD: %ld\n",rmsg->rc_txn_id, get_thd_id());
+    printf("Sending Request_2PCBatch: TID:%ld : THD: %ld\n",rmsg->rc_txn_id, get_thd_id());
     //fflush(stdout);
 
     //enqueue to msg_queue
@@ -246,10 +283,10 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
     Vote_2PC *vmsg = (Vote_2PC *)mssg;
     vmsg->init();
 
-    ExecuteMessage *emsg = (ExecuteMessage *)msg;
-    TxnManager *txn_man = get_transaction_manager(emsg->index, 0);
+    //ExecuteMessage *emsg = (ExecuteMessage *)msg;
+    //txn_man = get_transaction_manager(emsg->end_index, 0);
 
-    while (true)
+    /* while (true)
         {
             bool ready = txn_man->unset_ready();
             if (!ready)
@@ -260,14 +297,24 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
             {
                 break;
             }
-        }
+        } */
 
     vmsg->rc_txn_id = txn_man->get_txn_id_RC();
 
-    // Reset this txn manager.
-    bool ready = txn_man->set_ready();
-    assert(ready);
 
+    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    {
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        clqry->return_node = txn_man->client_id;
+        vmsg->cqrySet.add(clqry);
+               
+    }
+
+
+    // Reset this txn manager.
+    /* bool ready = txn_man->set_ready();
+    assert(ready);
+ */
     vector<string> emptyvec;
 	vector<uint64_t> dest;
         
@@ -275,7 +322,9 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
     for (uint64_t i=0; i<g_shard_size; i++)
         {
             dest.push_back(i);           
-        }             
+        }
+
+    printf("Sending Vote: ");             
         
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), vmsg, emptyvec, dest);
