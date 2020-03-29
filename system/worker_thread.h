@@ -82,7 +82,7 @@ public:
     RC process_request_2pc(Message *msg);
     bool check_2pc_request_recvd(Request_2PCBatch *msg);
     RC process_vote_2pc(Message *msg);
-    bool check_2pc_vote_recvd(Vote_2PC *msg);
+    bool check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man);
     RC process_global_commit_2pc(Message *msg);
     bool check_2pc_global_commit_recvd(Global_Commit_2PC *msg);
 

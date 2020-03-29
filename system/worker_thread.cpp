@@ -132,7 +132,7 @@ void WorkerThread::process(Message *msg)
         }
         break;
     case VOTE_2PC:
-        cout<<"Recieved 2PC Vote in Node "<<g_node_id<<endl;
+        cout<<"Recieved 2PC Vote in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_vote_2pc(msg);
@@ -1699,9 +1699,9 @@ bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
     return false;
 }
 
-bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
+bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
 
-    return false;
+    return true;
 }
 
 bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg){

@@ -373,6 +373,15 @@ RC WorkerThread::process_request_2pc(Message *msg)
 
 RC WorkerThread::process_vote_2pc(Message *msg)
 {
+    Vote_2PC *vote2PC = (Vote_2PC *)msg;
+
+    printf("Vote_2PC txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
+    vote2PC->txn_id, get_thd_id(),msg->return_node_id ,vote2PC->rc_txn_id,vote2PC->batch_id);
+    fflush(stdout);
+
+    if(check_2pc_vote_recvd(vote2PC, txn_man)){
+
+    }
 
     return RCOK;
 }
