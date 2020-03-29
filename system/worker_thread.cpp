@@ -207,25 +207,11 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     Request_2PCBatch *rmsg = (Request_2PCBatch *)mssg;
     rmsg->init();
 
-    //getting last transaction
+    
     ExecuteMessage *emsg = (ExecuteMessage *)msg;
     rmsg->rc_txn_id = emsg->end_index;
 
-    //getting txn manager of the last transaction
-    //txn_man = get_transaction_manager(emsg->end_index, 0);
-    //Lock the transaction Manager
-
-   /* bool ready = txn_man->unset_ready();
-            if (!ready)
-            {
-                //cout << "Placing: Txn: " << msg->txn_id << " Type: " << msg->rtype << "\n";
-                //fflush(stdout);
-                // Return to work queue, end processing
-                work_queue.enqueue(get_thd_id(), msg, true);
-                return RCOK;
-            } */
-
-   
+       
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
     {
         YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
@@ -237,20 +223,6 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
 	vector<uint64_t> dest;
     Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
 
-    /* if (txn_man)
-        {
-            bool ready = txn_man->set_ready();
-            if (!ready)
-            {
-                cout << "FAILed to set txn man to ready: " << txn_man->get_txn_id() << " :: RT: " << msg->rtype << "\n";
-                fflush(stdout);
-                assert(ready);
-            }
-        }
- */
-   /*  // Reset this txn manager.
-    bool ready = txn_man->set_ready();
-    assert(ready); */
     //populating destination array to send to invloved shards
     for (uint64_t i=0; i<shardsInvolved.size(); i++)
         {
@@ -283,22 +255,6 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
     Vote_2PC *vmsg = (Vote_2PC *)mssg;
     vmsg->init();
 
-    //ExecuteMessage *emsg = (ExecuteMessage *)msg;
-    //txn_man = get_transaction_manager(emsg->end_index, 0);
-
-    /* while (true)
-        {
-            bool ready = txn_man->unset_ready();
-            if (!ready)
-            {
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        } */
-
     vmsg->rc_txn_id = txn_man->get_txn_id_RC();
 
 
@@ -310,11 +266,6 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
                
     }
 
-
-    // Reset this txn manager.
-    /* bool ready = txn_man->set_ready();
-    assert(ready);
- */
     vector<string> emptyvec;
 	vector<uint64_t> dest;
         
