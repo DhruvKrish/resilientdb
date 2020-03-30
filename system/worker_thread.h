@@ -33,6 +33,8 @@ public:
     void release_txn_man(uint64_t txn_id, uint64_t batch_id);
     void algorithm_specific_update(Message *msg, uint64_t idx);
     void create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid);
+    //Function to send BatchRequest (Pre-Prepare) after receiving Vote_2PC or Global_Commit_2PC.
+    void send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid);
     void set_txn_man_fields(BatchRequests *breq, uint64_t bid);
 
     bool validate_msg(Message *msg);

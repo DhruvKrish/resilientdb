@@ -75,34 +75,52 @@ RC WorkerThread::process_batch(Message *msg)
 
     printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
     if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+    if(breq->TwoPC_Vote_recvd)cout<<"BatchRequest vote 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+    if(breq->TwoPC_Commit_recvd)cout<<"BatchRequest commit 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
     fflush(stdout);
 
     // Assert that only a non-primary replica has received this message.
     assert(g_node_id != get_current_view(get_thd_id()));
 
     // Check if the message is valid.
-    validate_msg(breq);
+    //validate_msg(breq);
 
 #if VIEW_CHANGES
     // Store the batch as it could be needed during view changes.
     store_batch_msg(breq);
 #endif
 
-    // Allocate transaction managers for all the transactions in the batch.
-    set_txn_man_fields(breq, 0);
+    if(!(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd))
+    {
+        // Allocate transaction managers for all the transactions in the batch.
+        set_txn_man_fields(breq, 0);
 
-    //Check txn_man
-    //printf("txn_man in process_batch: txn_id: %ld : rc_txn_id :%ld batch: %ld : THD: %ld\n",txn_man->get_txn_id(), 
-    //txn_man->get_txn_id_RC(),txn_man->get_batch_id(), get_thd_id());
-    //fflush(stdout);
+        //Check txn_man
+        //printf("txn_man in process_batch: txn_id: %ld : rc_txn_id :%ld batch: %ld : THD: %ld\n",txn_man->get_txn_id(), 
+        //txn_man->get_txn_id_RC(),txn_man->get_batch_id(), get_thd_id());
+        //fflush(stdout);
 
-#if TIMER_ON
-    // The timer for this client batch stores the hash of last request.
-    add_timer(breq, txn_man->get_hash());
-#endif
+    #if TIMER_ON
+        // The timer for this client batch stores the hash of last request.
+        add_timer(breq, txn_man->get_hash());
+    #endif
 
-    // Storing the BatchRequests message.
-    txn_man->set_primarybatch(breq);
+        // Storing the BatchRequests message.
+        txn_man->set_primarybatch(breq);
+    }
+
+    if(breq->TwoPC_Vote_recvd) {
+        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
+        txn_man->set_2PC_Request_recvd();
+        txn_man->set_2PC_Vote_recvd();
+    }
+    if(breq->TwoPC_Commit_recvd) {
+        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
+        txn_man->set_2PC_Vote_recvd();
+        txn_man->set_2PC_Commit_recvd();
+    }
 
     // Send Prepare messages.
     txn_man->send_pbft_prep_msgs();
@@ -377,10 +395,17 @@ RC WorkerThread::process_vote_2pc(Message *msg)
 
     printf("Vote_2PC txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
     vote2PC->txn_id, get_thd_id(),msg->return_node_id ,vote2PC->rc_txn_id,vote2PC->batch_id);
+    printf("Vote_2PC txn_man txn_id: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
+    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
 
     if(check_2pc_vote_recvd(vote2PC, txn_man)){
 
+        //Authenticate the reference committee signature.
+        //validate_msg(vote2PC);
+
+        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
+        send_batchreq_2PC(vote2PC, vote2PC->txn_id);
     }
 
     return RCOK;
