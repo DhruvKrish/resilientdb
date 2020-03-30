@@ -1321,37 +1321,44 @@ void WorkerThread::algorithm_specific_update(Message *msg, uint64_t idx)
  */
 void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
 {
-    for (uint64_t i = 0; i < get_batch_size(); i++)
+    if(!(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd))
     {
-        //If Request_2PC received in shard instead of Client_Batch, create last txn_man of batch with 2PC info
-        if(i==get_batch_size()-1 && breq->rc_txn_id!=0)
-            txn_man = get_transaction_manager(breq->index[i], breq->rc_txn_id);
-        else 
-            txn_man = get_transaction_manager(breq->index[i], bid);
-
-        while (true)
+        for (uint64_t i = 0; i < get_batch_size(); i++)
         {
-            bool ready = txn_man->unset_ready();
-            if (!ready)
+            //If Request_2PC received in shard instead of Client_Batch, create last txn_man of batch with 2PC info
+            if(i==get_batch_size()-1 && breq->rc_txn_id!=0)
+                txn_man = get_transaction_manager(breq->index[i], breq->rc_txn_id);
+            else 
+                txn_man = get_transaction_manager(breq->index[i], bid);
+
+            while (true)
             {
-                continue;
+                bool ready = txn_man->unset_ready();
+                if (!ready)
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
-            {
-                break;
-            }
+
+            txn_man->register_thread(this);
+            txn_man->return_id = breq->return_node_id;
+
+            // Fields that need to updated according to the specific algorithm.
+            algorithm_specific_update(breq, i);
+
+            init_txn_man(breq->requestMsg[i]);
+
+            bool ready = txn_man->set_ready();
+            assert(ready);
         }
+    }
 
-        txn_man->register_thread(this);
-        txn_man->return_id = breq->return_node_id;
-
-        // Fields that need to updated according to the specific algorithm.
-        algorithm_specific_update(breq, i);
-
-        init_txn_man(breq->requestMsg[i]);
-
-        bool ready = txn_man->set_ready();
-        assert(ready);
+    if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd){
+        txn_man = get_transaction_manager(breq->txn_id + 2, breq->batch_id);
     }
 
     // We need to unset txn_man again for last txn in the batch.
@@ -1380,8 +1387,22 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         <<" rc_txn_id: "<<txn_man->get_txn_id_RC()
         <<" txn_man hash: "<<txn_man->get_hash()<<endl;*/
     }
-    if(breq->TwoPC_Vote_recvd) txn_man->set_2PC_Vote_recvd();
-    if(breq->TwoPC_Commit_recvd) txn_man->set_2PC_Commit_recvd();
+    if(breq->TwoPC_Vote_recvd) {
+        txn_man->prepared = false;
+        txn_man->committed_local = false;
+        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes + 1;
+        txn_man->set_2PC_Request_recvd();
+        txn_man->set_2PC_Vote_recvd();
+    }
+    if(breq->TwoPC_Commit_recvd) {
+        txn_man->prepared = false;
+        txn_man->committed_local = false;
+        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes + 1;
+        txn_man->set_2PC_Vote_recvd();
+        txn_man->set_2PC_Commit_recvd();
+    }
 }
 
 /**
@@ -1544,12 +1565,16 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     cout<<"In send_batchreq_2PC for tid: "<<tid<<endl;
 
     if(msg->rtype == VOTE_2PC){
+        txn_man->prepared = false;
+        txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
         txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
     else if(msg->rtype == GLOBAL_COMMIT_2PC){
+        txn_man->prepared = false;
+        txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
         txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
         txn_man->set_2PC_Vote_recvd();

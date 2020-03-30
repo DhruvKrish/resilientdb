@@ -73,11 +73,14 @@ RC WorkerThread::process_batch(Message *msg)
 
     BatchRequests *breq = (BatchRequests *)msg;
 
-    printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
-    if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-    if(breq->TwoPC_Vote_recvd)cout<<"BatchRequest vote 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-    if(breq->TwoPC_Commit_recvd)cout<<"BatchRequest commit 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-    fflush(stdout);
+    if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd)
+    {
+        printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
+        if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        if(breq->TwoPC_Vote_recvd)cout<<"BatchRequest vote 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        if(breq->TwoPC_Commit_recvd)cout<<"BatchRequest commit 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        fflush(stdout);
+    }
 
     // Assert that only a non-primary replica has received this message.
     assert(g_node_id != get_current_view(get_thd_id()));
@@ -90,37 +93,21 @@ RC WorkerThread::process_batch(Message *msg)
     store_batch_msg(breq);
 #endif
 
-    if(!(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd))
-    {
-        // Allocate transaction managers for all the transactions in the batch.
-        set_txn_man_fields(breq, 0);
+    // Allocate transaction managers for all the transactions in the batch.
+    set_txn_man_fields(breq, 0);
 
-        //Check txn_man
-        //printf("txn_man in process_batch: txn_id: %ld : rc_txn_id :%ld batch: %ld : THD: %ld\n",txn_man->get_txn_id(), 
-        //txn_man->get_txn_id_RC(),txn_man->get_batch_id(), get_thd_id());
-        //fflush(stdout);
+    //Check txn_man
+    //printf("txn_man in process_batch: txn_id: %ld : rc_txn_id :%ld batch: %ld : THD: %ld\n",txn_man->get_txn_id(), 
+    //txn_man->get_txn_id_RC(),txn_man->get_batch_id(), get_thd_id());
+    //fflush(stdout);
 
-    #if TIMER_ON
-        // The timer for this client batch stores the hash of last request.
-        add_timer(breq, txn_man->get_hash());
-    #endif
+#if TIMER_ON
+    // The timer for this client batch stores the hash of last request.
+    add_timer(breq, txn_man->get_hash());
+#endif
 
-        // Storing the BatchRequests message.
-        txn_man->set_primarybatch(breq);
-    }
-
-    if(breq->TwoPC_Vote_recvd) {
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
-        txn_man->set_2PC_Request_recvd();
-        txn_man->set_2PC_Vote_recvd();
-    }
-    if(breq->TwoPC_Commit_recvd) {
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
-        txn_man->set_2PC_Vote_recvd();
-        txn_man->set_2PC_Commit_recvd();
-    }
+    // Storing the BatchRequests message.
+    txn_man->set_primarybatch(breq);
 
     // Send Prepare messages.
     txn_man->send_pbft_prep_msgs();
@@ -224,9 +211,12 @@ RC WorkerThread::process_batch(Message *msg)
  */
 RC WorkerThread::process_pbft_prep_msg(Message *msg)
 {
-    //cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-    //cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
-    fflush(stdout);
+    if(txn_man->is_2PC_Vote_recvd()){
+        cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
+        cout << "is_2PC_Vote_recvd: "<< txn_man->is_2PC_Vote_recvd()<<endl;
+        fflush(stdout);
+    }
 
     // Start the counter for prepare phase.
     if (txn_man->prep_rsp_cnt == 2 * g_min_invalid_nodes)
@@ -268,8 +258,10 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
  */
 bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 {
-    //cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-    //fflush(stdout);
+    if(txn_man->is_2PC_Vote_recvd()){
+        cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        fflush(stdout);
+    }
 
     // Once committed is set for this transaction, no further processing.
     if (txn_man->is_committed())
@@ -280,8 +272,10 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
     // If BatchRequests messages has not arrived, then hash is empty; return false.
     if (txn_man->get_hash().empty())
     {
-        //cout << "committed_local hash empty: " << txn_man->get_txn_id() << "\n";
-        //fflush(stdout);
+        if(txn_man->is_2PC_Vote_recvd()){
+            cout << "committed_local hash empty: " << txn_man->get_txn_id() << "\n";
+            fflush(stdout);
+        }
         txn_man->info_commit.push_back(msg->return_node);
         return false;
     }
@@ -298,6 +292,7 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
     }
 
     uint64_t comm_cnt = txn_man->decr_commit_rsp_cnt();
+    if(txn_man->is_2PC_Vote_recvd()) cout<<"Count decremented:"<<comm_cnt<<" txn_id: "<<txn_man->get_txn_id()<<endl;
     if (comm_cnt == 0 && txn_man->is_prepared())
     {
         txn_man->set_committed();
@@ -319,20 +314,27 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
  */
 RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
-    cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-    " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-    fflush(stdout);
+    if(txn_man->is_2PC_Vote_recvd()){
+        cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+        " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        cout<<" commit_rsp_count: "<<txn_man->commit_rsp_cnt<<endl;
+        fflush(stdout);
+    }
 
     if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes + 1)
     {
         txn_man->txn_stats.time_start_commit = get_sys_clock();
     }
 
-    // Check if message is valid.
     PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
-    validate_msg(pcmsg);
 
-    txn_man->add_commit_msg(pcmsg);
+    if(!(txn_man->is_2PC_Vote_recvd() || txn_man->is_2PC_Commit_recvd()))
+    {
+        // Check if message is valid.
+        validate_msg(pcmsg);
+
+        txn_man->add_commit_msg(pcmsg);
+    }
 
     // Check if sufficient number of Commit messages have arrived.
     if (committed_local(pcmsg))
@@ -344,6 +346,9 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;
+        if(txn_man->is_2PC_Vote_recvd())
+            cout<<"Inside process_pbft_commit: 2PC vote set in txn_man representing batch. txn_id: "
+            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
     //cout<<"txnman->cs"<<txn_man->get_cross_shard_txn()<<endl;
