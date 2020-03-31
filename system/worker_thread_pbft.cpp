@@ -366,8 +366,8 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         if (txn_man ->is_2PC_Vote_recvd())
         {
 
-            cout<<"Inside current if"<<endl;
-            //send_execute_msg();
+            
+            send_execute_msg();
         }
         send_cross_shard_execute_msg();
         

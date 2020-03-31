@@ -141,8 +141,9 @@ void WorkerThread:: process(Message *msg)
     case GLOBAL_COMMIT_2PC:
         cout<<"Recieved 2PC Global Commit in Node "<<g_node_id<<endl;
         //Only process message if node is primary of a shard
+        rc = process_global_commit_2pc(msg);
         if(is_primary_node(get_thd_id(),g_node_id)) {
-            rc = process_global_commit_2pc(msg);
+            
         }
         break;
     default:
