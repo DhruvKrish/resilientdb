@@ -84,7 +84,7 @@ void WorkerThread::setup()
     _thd_txn_id = 0;
 }
 
-void WorkerThread::process(Message *msg)
+void WorkerThread:: process(Message *msg)
 {
     RC rc __attribute__((unused));
 
@@ -174,25 +174,26 @@ bool WorkerThread::isOtherShard()
 RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
 {
 
-        if(isOtherShard())
+        /* if(isOtherShard())
         {
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
-        }
+        } */
     //if current node is reference committee, phase -> Cross shard transaction recieved from client  
         if(isRefCommittee() && is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
         }
-        else if (is_primary_node(get_thd_id(),g_node_id) && isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Commit_recvd)
+        else if (isOtherShard() && is_primary_node(get_thd_id(),g_node_id) && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            cout<<"Checking if condtn"<<endl;
+            //cout<<"Checking if condtn"<<endl;
             create_and_send_Vote_2PC(msg);
         }
-        /* else if ()
+        else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            //for Global commit
-        } */
+            cout<<"Checking if condtn"<<endl;
+            create_and_send_global_commit(msg);
+        } 
 
 
     return RCOK;
@@ -290,37 +291,27 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
 
 RC WorkerThread::create_and_send_global_commit(Message *msg)
 {
-    //cout<<"In create and send Global Commit func"<<endl;
+    cout<<"In create and send Global Commit func"<<endl;
     Message *mssg = Message::create_message(GLOBAL_COMMIT_2PC);
     Global_Commit_2PC *gmsg = (Global_Commit_2PC *)mssg;
     gmsg->init();
 
-    ExecuteMessage *emsg = (ExecuteMessage *)msg;
-    gmsg->rc_txn_id = emsg->index;
+    //GLobal Commit message should assign txn_id of Reference Committee which is rc_txn_id/batch_id of shards.
+    //gmsg->txn_id = txn_man->get_batch_id();
+    gmsg->rc_txn_id = 0;
+    gmsg->batch_id = 0;
 
-    //getting txn manager of the last transaction
-    TxnManager *txn_man = get_transaction_manager(emsg->index, 0);
-    //Lock the transaction Manager
+    
 
-    while (true)
-        {
-            bool ready = txn_man->unset_ready();
-            if (!ready)
-            {
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-
+    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    {
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        clqry->return_node = txn_man->client_id;
+        gmsg->cqrySet.add(clqry);
+               
+    }
 
     Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
-
-    //Reset this txn manager.
-    bool ready = txn_man->set_ready();
-    assert(ready);
 
     vector<string> emptyvec;
 	vector<uint64_t> dest;
@@ -339,7 +330,7 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
             }             
         }  
         
-
+    cout<<"Sending GlobalCommit"<<endl;
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), gmsg, emptyvec, dest);
 	dest.clear();
@@ -897,6 +888,11 @@ RC WorkerThread::run()
             INC_STATS(_thd_id, worker_idle_time, get_sys_clock() - idle_starttime);
             idle_starttime = 0;
         }
+        if(msg->rtype == GLOBAL_COMMIT_2PC)
+        {
+            cout<<"Global Commit 2PC dequeued"<<endl;
+        }
+
 
         #if VIEW_CHANGES
         // Ensure that thread 0 of the primary never processes ClientQueryBatch.
@@ -949,6 +945,7 @@ RC WorkerThread::run()
             }
         }
 
+        
         process(msg);
 
         ready_starttime = get_sys_clock();
