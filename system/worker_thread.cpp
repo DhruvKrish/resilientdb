@@ -189,7 +189,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             //cout<<"Checking if condtn"<<endl;
             create_and_send_Vote_2PC(msg);
         }
-        else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+        else if (isRefCommittee() && g_node_id==1 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
             cout<<"Checking if condtn"<<endl;
             create_and_send_global_commit(msg);
@@ -297,9 +297,9 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
     gmsg->init();
 
     //GLobal Commit message should assign txn_id of Reference Committee which is rc_txn_id/batch_id of shards.
-    //gmsg->txn_id = txn_man->get_batch_id();
-    gmsg->rc_txn_id = 0;
-    gmsg->batch_id = 0;
+    gmsg->txn_id = txn_man->get_txn_id();
+    gmsg->rc_txn_id = txn_man->get_txn_id();
+    gmsg->batch_id = txn_man->get_txn_id();
 
     
 
@@ -1578,8 +1578,7 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         txn_man->set_2PC_Commit_recvd();
     }
 
-    TxnManager *txn_man1 = get_transaction_manager(txn_man->get_txn_id(),txn_man->get_batch_id());
-    if(txn_man1->is_2PC_Vote_recvd())cout<<"Updated! txn_id: "<<txn_man->get_txn_id()
+    if(txn_man->is_2PC_Commit_recvd())cout<<"Updated! txn_id: "<<txn_man->get_txn_id()
     <<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
 
     // Creating a new BatchRequests Message.
@@ -1621,7 +1620,7 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         emptyvec.push_back(txn_man->batchreq->signature);
     }
 
-    printf("Enqueueing to msg queue BatchRequests from 2PC_Vote: TID:%ld : RC_TID:%ld\n",
+    if(breq->TwoPC_Commit_recvd)printf("Enqueueing to msg queue BatchRequests from 2PC_Commit: TID:%ld : RC_TID:%ld\n",
     breq->txn_id, breq->rc_txn_id);
     fflush(stdout);
 
