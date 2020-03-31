@@ -421,6 +421,22 @@ RC WorkerThread::process_vote_2pc(Message *msg)
 
 RC WorkerThread::process_global_commit_2pc(Message *msg)
 {
+    Global_Commit_2PC *commit2PC = (Global_Commit_2PC *)msg;
+
+    printf("Global_Commit_2PC txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
+    commit2PC->txn_id, get_thd_id(),msg->return_node_id ,commit2PC->rc_txn_id,commit2PC->batch_id);
+    printf("Global_Commit_2PC txn_man txn_id: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
+    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
+    fflush(stdout);
+
+    if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
+
+        //Authenticate the reference committee signature.
+        //validate_msg(vote2PC);
+
+        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
+        send_batchreq_2PC(commit2PC, commit2PC->txn_id);
+    }
 
     return RCOK;
 }
