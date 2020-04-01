@@ -1497,7 +1497,7 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         txn_man->prepared = false;
         txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes + 1;
+        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
@@ -1505,7 +1505,7 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         txn_man->prepared = false;
         txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes + 1;
+        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }
@@ -1674,7 +1674,7 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         txn_man->prepared = false;
         txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
+        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
@@ -1682,7 +1682,7 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         txn_man->prepared = false;
         txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt + 1;
+        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }

@@ -322,12 +322,12 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
     if(txn_man->is_2PC_Commit_recvd()){
         cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-        " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-        cout<<" commit_rsp_count: "<<txn_man->commit_rsp_cnt<<endl;
+        " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()
+        <<" commit_rsp_count: "<<txn_man->commit_rsp_cnt<<endl;
         fflush(stdout);
     }
 
-    if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes + 1)
+    if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes)
     {
         txn_man->txn_stats.time_start_commit = get_sys_clock();
     }

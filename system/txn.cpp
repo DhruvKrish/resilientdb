@@ -151,7 +151,7 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     prepared = false;
     committed_local = false;
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    commit_rsp_cnt = prep_rsp_cnt;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     //Counters of 2PC messages
@@ -202,7 +202,7 @@ void TxnManager::release(uint64_t pool_id)
     prepared = false;
 
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    commit_rsp_cnt = prep_rsp_cnt;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
     //Counters of 2PC messages
     TwoPC_Request_cnt=g_min_invalid_nodes+1;
