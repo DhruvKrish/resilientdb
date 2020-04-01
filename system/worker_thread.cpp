@@ -103,12 +103,24 @@ void WorkerThread:: process(Message *msg)
         rc = process_pbft_chkpt_msg(msg);
         break;
     case CROSS_SHARD_EXECUTE:
-        //cout<<"Received Cross Shard Execute"<<endl;
+        cout<<"Received Cross Shard Execute"<<endl;
         process_cross_shard_execute_msg(msg);
         break;
     case EXECUTE_MSG:
-        rc = process_execute_msg(msg);
+        {
+            cout<<"Received Execute message"<<endl;
+            txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
+            Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+            if(isRefCommittee() && !shardsInvolved.contains(0))
+            {
+                rc = send_client_response(msg);
+            }
+            else
+            {
+                rc = process_execute_msg(msg);
+            }
         break;
+        }
 #if VIEW_CHANGES
     case VIEW_CHANGE:
         rc = process_view_change_msg(msg);
@@ -124,7 +136,7 @@ void WorkerThread:: process(Message *msg)
         rc = process_pbft_commit_msg(msg);
         break;
     case REQUEST_2PC:
-        cout<<"Recieved 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
+        cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         fflush(stdout);
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
@@ -132,14 +144,14 @@ void WorkerThread:: process(Message *msg)
         }
         break;
     case VOTE_2PC:
-        cout<<"Recieved 2PC Vote in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
+        cout<<"Received 2PC Vote in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_vote_2pc(msg);
         }
         break;
     case GLOBAL_COMMIT_2PC:
-        cout<<"Recieved 2PC Global Commit in Node "<<g_node_id<<endl;
+        cout<<"Received 2PC Global Commit in Node "<<g_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_global_commit_2pc(msg);
@@ -178,7 +190,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         {
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
         } */
-    //if current node is reference committee, phase -> Cross shard transaction recieved from client  
+    //if current node is reference committee, phase -> Cross shard transaction received from client  
         if(isRefCommittee() && is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
@@ -191,7 +203,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         }
         else if (isRefCommittee() && g_node_id==1 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            cout<<"Checking if condtn"<<endl;
+            //cout<<"Checking if condtn"<<endl;
             create_and_send_global_commit(msg);
         } 
 
@@ -1055,6 +1067,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     uint64_t ctime = get_sys_clock();
 
+
     // This message uses txn man of index calling process_execute.
     Message *rsp = Message::create_message(CL_RSP);
     ClientResponseMessage *crsp = (ClientResponseMessage *)rsp;
@@ -1165,6 +1178,102 @@ RC WorkerThread::process_execute_msg(Message *msg)
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
     return RCOK;
 }
+
+
+/**
+ * Sending Client Response.
+ *
+ * This function is used by the nodes in the Reference Committee when 
+ * the Ref. committee is not involved in the cross shard transaction, 
+ * it only sends client repsonse, doesnt execute the transaction. 
+ *
+ * @param msg Execute message that notifies execution of a batch.
+ * @ret RC
+ */
+RC WorkerThread:: send_client_response(Message *msg)
+{
+    //cout << "EXECUTE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
+    //fflush(stdout);
+
+    // This message uses txn man of index calling process_execute.
+    Message *rsp = Message::create_message(CL_RSP);
+    ClientResponseMessage *crsp = (ClientResponseMessage *)rsp;
+    crsp->init();
+
+    ExecuteMessage *emsg = (ExecuteMessage *)msg;
+
+    // Execute transactions in a shot
+    uint64_t i;
+    for (i = emsg->index; i < emsg->end_index - 4; i++)
+    {
+        //cout << "i: " << i << " :: next index: " << g_next_index << "\n";
+        //fflush(stdout);
+
+        TxnManager *tman = get_transaction_manager(i, 0);
+        crsp->copy_from_txn(tman);
+    }
+
+    // Transactions (**95 - **98) of the batch.
+    // We process these transactions separately, as we want to
+    // ensure that their txn man are not held by some other thread.
+    for (; i < emsg->end_index; i++)
+    {
+        TxnManager *tman = get_transaction_manager(i, 0);
+        while (true)
+        {
+            bool ready = tman->unset_ready();
+            if (!ready)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        crsp->copy_from_txn(tman);
+
+        // Making this txn man available.
+        bool ready = tman->set_ready();
+        assert(ready);
+    }
+
+    // Last Transaction of the batch.
+    txn_man = get_transaction_manager(i, 0);
+    while (true)
+    {
+        bool ready = txn_man->unset_ready();
+        if (!ready)
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    crsp->copy_from_txn(txn_man);
+
+    vector<string> emptyvec;
+    vector<uint64_t> dest;
+    dest.push_back(txn_man->client_id);
+    msg_queue.enqueue(get_thd_id(), crsp, emptyvec, dest);
+    dest.clear();
+
+    INC_STATS(_thd_id, tput_msg, 1);
+    INC_STATS(_thd_id, msg_cl_out, 1);
+
+    return RCOK;
+}
+
+
+
+
+
+
+
 
 /**
  * This function helps in periodically sending out CheckpointMessage. At present these

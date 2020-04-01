@@ -265,7 +265,7 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
 bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 {
     if(txn_man->is_2PC_Vote_recvd()){
-        cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        //cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
         fflush(stdout);
     }
 
@@ -356,21 +356,34 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
             cout<<"Inside process_pbft_commit: 2PC vote set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;*/
         if(txn_man->is_2PC_Commit_recvd())
-            cout<<"Inside process_pbft_commit: 2PC vote set in txn_man representing batch. txn_id: "
+            cout<<"Inside process_pbft_commit: 2PC Commit set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
     //cout<<"txnman->cs"<<txn_man->get_cross_shard_txn()<<endl;
     if(txn_man->get_cross_shard_txn())
     {      
-        if (txn_man ->is_2PC_Vote_recvd())
+        if (isRefCommittee())
         {
-
-            cout<<"Inside current if"<<endl;
-            //send_execute_msg();
+            if(txn_man->is_2PC_Vote_recvd())
+            {
+                send_execute_msg();
+            }
+            send_cross_shard_execute_msg();
+            
         }
-        send_cross_shard_execute_msg();
-        
+        else if(isOtherShard())
+        {
+            if(!txn_man->is_2PC_Commit_recvd())
+            {
+                send_cross_shard_execute_msg();
+            }
+            else
+            {
+                send_execute_msg();
+            }
+            
+        }       
     }
     else
     {

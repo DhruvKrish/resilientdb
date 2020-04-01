@@ -46,10 +46,6 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         This idea works till every replica needs to generate a different signature
         for every other replica.
     */
-   if(msg->get_rtype() == GLOBAL_COMMIT_2PC)
-   {
-       cout<<"We in"<<endl;
-   }
     switch (msg->get_rtype())
     {   
     case KEYEX:
@@ -107,7 +103,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         break;
     case GLOBAL_COMMIT_2PC:
         cout<<"In case GLOBAL_COMMIT_2PC"<<endl;
-       /*  for (uint64_t i = 0; i < dest.size(); i++)
+        /* for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Global_Commit_2PC *)msg)->sign(dest[i]);
             entry->allsign.push_back(msg->signature);
