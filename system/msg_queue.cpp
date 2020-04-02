@@ -102,13 +102,13 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         }
         break;
     case GLOBAL_COMMIT_2PC:
-        cout<<"In case GLOBAL_COMMIT_2PC"<<endl;
-        /* for (uint64_t i = 0; i < dest.size(); i++)
+        //cout<<"In case GLOBAL_COMMIT_2PC"<<endl;
+        for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Global_Commit_2PC *)msg)->sign(dest[i]);
             entry->allsign.push_back(msg->signature);
-        } */
-        cout<<"Enqueue case done"<<endl;
+        } 
+        //cout<<"Enqueue case done"<<endl;
         break;      
 
 #if VIEW_CHANGES
