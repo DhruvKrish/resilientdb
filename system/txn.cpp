@@ -397,6 +397,17 @@ void TxnManager::set_primarybatch(BatchRequests *breq)
 	delete_msg_buffer(buf);
 }	
 
+BatchRequests* TxnManager::get_primarybatch()
+{
+    BatchRequests * brequest;
+	char *buf = create_msg_buffer(this->batchreq);
+	Message *deepMsg = deep_copy_msg(buf, this->batchreq);
+	brequest = (BatchRequests *)deepMsg;
+	delete_msg_buffer(buf);
+
+    return brequest;
+}
+
 bool TxnManager::is_chkpt_ready()
 {
     return chkpt_flag;
