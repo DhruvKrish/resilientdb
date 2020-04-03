@@ -1635,6 +1635,11 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
+    /*if(!breq->TwoPC_Commit_recvd && isOtherShard())
+    {cout<<"Before get_primarybatch check"<<endl;
+    BatchRequests* test = txn_man->get_primarybatch();
+    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}*/
+
     // Storing all the signatures.
     vector<string> emptyvec;
     TxnManager *tman = get_transaction_manager(txn_man->get_txn_id() - 2, 0);
@@ -1709,6 +1714,14 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     }
 
     breq->copy_from_txn(txn_man);
+
+    // Storing the BatchRequests message.
+    txn_man->set_primarybatch(breq);
+
+    if(breq->TwoPC_Commit_recvd && isOtherShard())
+    {cout<<"Before get_primarybatch check"<<endl;
+    BatchRequests* test = txn_man->get_primarybatch();
+    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}
 
     // Storing all the signatures.
     vector<string> emptyvec;

@@ -109,6 +109,11 @@ RC WorkerThread::process_batch(Message *msg)
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
+    if(breq->TwoPC_Commit_recvd && isOtherShard())
+    {cout<<"Before get_primarybatch check"<<endl;
+    BatchRequests* test = txn_man->get_primarybatch();
+    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}
+
     // Send Prepare messages.
     txn_man->send_pbft_prep_msgs();
 
