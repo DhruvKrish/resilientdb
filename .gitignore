@@ -16,3 +16,5 @@ hostnames.py
 docker-compose.yml
 res.out
 .DS_Store
+scripts/startResilientDB.sh
+rsync.sh
