@@ -1170,12 +1170,15 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     // Check and Send checkpoint messages.
     send_checkpoints(txn_man->get_txn_id());
+    cout<<"Successful execute1: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // Setting the next expected prepare message id.
     set_expectedExecuteCount(get_batch_size() + msg->txn_id);
+    cout<<"Successful execute2: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // End the execute counter.
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
+    cout<<"Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
     return RCOK;
 }
 
