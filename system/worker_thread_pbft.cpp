@@ -180,6 +180,9 @@ RC WorkerThread::process_batch(Message *msg)
     /*if(txn_man->is_2PC_Request_recvd())
         cout<<"Inside process_batch: 2PC request set in txn_man representing batch. rc_txn_id: "
         <<txn_man->get_txn_id_RC()<<endl;*/
+    if(txn_man->is_2PC_Vote_recvd())
+        cout<<"Inside process_batch: 2PC vote set in txn_man representing batch. rc_txn_id: "
+        <<txn_man->get_txn_id_RC()<<endl;
     if(txn_man->is_2PC_Commit_recvd())
         cout<<"Inside process_batch: 2PC commit set in txn_man representing batch. rc_txn_id: "
         <<txn_man->get_txn_id_RC()<<endl;
@@ -242,6 +245,9 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
         /*if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;*/
+        if(txn_man->is_2PC_Vote_recvd())
+            cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. rc_txn_id: "
+            <<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;
@@ -356,18 +362,19 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
 #endif
         /*if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;
+            <<txn_man->get_txn_id_RC()<<endl;*/
         if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_commit: 2PC vote set in txn_man representing batch. txn_id: "
-            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;*/
+            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_commit: 2PC Commit set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
-    //cout<<"txnman->cs"<<txn_man->get_cross_shard_txn()<<endl;
+    cout<<"txn_id: "<<txn_man->get_txn_id()<<" txnman->cs: "<<txn_man->get_cross_shard_txn()<<endl;
     if(txn_man->get_cross_shard_txn())
     {      
+        if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
         if (isRefCommittee())
         {
             if(txn_man->is_2PC_Vote_recvd())
@@ -379,12 +386,14 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         }
         else if(isOtherShard())
         {
+            cout<<"Choose execute_msg for othershard txn_id: "<<txn_man->get_txn_id()<<endl;
             if(!txn_man->is_2PC_Commit_recvd())
             {
                 send_cross_shard_execute_msg();
             }
             else
             {
+                cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
                 send_execute_msg();
             }
             
