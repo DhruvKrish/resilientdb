@@ -292,6 +292,7 @@ txnid_t TxnManager::get_txn_id()
 void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
 {
     txn->txn_id_RC = txn_id_RC;
+    txn->batch_id = txn_id_RC;
 }
 
 txnid_t TxnManager::get_txn_id_RC()
@@ -547,8 +548,10 @@ uint64_t TxnManager::get_2PC_Commit_cnt()
 //broadcasts prepare message to all nodes
 void TxnManager::send_pbft_prep_msgs()
 {
-    //printf("%ld Send PBFT_PREP_MSG message to %d nodes\n", get_txn_id(), g_node_cnt - 1);
-    //fflush(stdout);
+    if(is_2PC_Vote_recvd()){
+        printf("Send PBFT_PREP_MSG message txn_id: %ld to %d nodes\n", get_txn_id(), g_shard_size - 1);
+        fflush(stdout);
+    }
 
     Message *msg = Message::create_message(this, PBFT_PREP_MSG);
     PBFTPrepMessage *pmsg = (PBFTPrepMessage *)msg;

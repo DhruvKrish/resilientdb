@@ -1788,7 +1788,7 @@ uint64_t CrossShardExecuteMessage::get_size()
 void CrossShardExecuteMessage::copy_from_txn(TxnManager *txn)
 {
 	// Constructing txn manager for one transaction less than end index.
-	this->txn_id = txn->get_txn_id() - 1;
+	this->txn_id = txn->get_txn_id();
 
 	this->view = get_current_view(txn->get_thd_id());
 	this->index = txn->get_txn_id() + 1 - get_batch_size();
