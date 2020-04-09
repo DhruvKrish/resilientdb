@@ -298,21 +298,23 @@ struct KeyPairHex
     std::string privateKey;
 };
 
-
 /*********************************************/
-// new methods for sharding
+// new methods and variables for sharding
 uint64_t get_shard_number(uint64_t i = g_node_id);
 uint64_t view_to_primary(uint64_t view, uint64_t node = g_node_id);
 int is_in_same_shard(uint64_t first_id,uint64_t second_id);
 bool is_primary_node(uint64_t thd_id, uint64_t node = g_node_id);
-// end of new methods 
-/*********************************************/
 
-// Hashtable for counting 2PC Request Messages at the primary of a shard
+// Map for counting 2PC Request Messages at the primary of a shard
 extern std::unordered_map<uint64_t, int> count_2PC_request;
-// Hashtable for counting 2PC Vote Messages from 
-//extern std::unordered_map<uint64_t, > count_2PC_vote; 
 
+extern std::unordered_map<uint64_t, vector<uint64_t> > count_2PC_vote;
+
+// Map for counting 2PC Global Commit
+extern std::unordered_map<uint64_t, int> count_2PC_global_commit;
+
+// end of new methods and variables
+/*********************************************/
 extern std::mutex keyMTX;
 extern bool keyAvail;
 extern uint64_t totKey;
