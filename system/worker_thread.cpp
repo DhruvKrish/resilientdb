@@ -1824,7 +1824,7 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
         fflush(stdout);
     }
     else {
-        cout << "Return node id " << return_node_id << endl;
+        cout << "Return node id " << msg->return_node_id << endl;
         uint64_t shard_no = (msg->return_node_id)%g_shard_size;
         cout << "Inside else: " << shard_no << endl;
         fflush(stdout);
