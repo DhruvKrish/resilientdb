@@ -108,8 +108,8 @@ void WorkerThread:: process(Message *msg)
         break;
     case EXECUTE_MSG:
         {
-            cout<<"Received Execute message"<<endl;
             txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
+            cout<<"[PH] Received Execute Msg for txn ID"<<msg->txn_id<<endl;
             Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
             if(isRefCommittee() && !shardsInvolved.contains(0))
             {
@@ -201,7 +201,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             //cout<<"Checking if condtn"<<endl;
             create_and_send_Vote_2PC(msg);
         }
-        else if (isRefCommittee() && g_node_id==1 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+        else if (isRefCommittee() && g_node_id==0 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
             //cout<<"Checking if condtn"<<endl;
             create_and_send_global_commit(msg);
@@ -303,7 +303,7 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
 
 RC WorkerThread::create_and_send_global_commit(Message *msg)
 {
-    cout<<"In create and send Global Commit func"<<endl;
+    cout<<"[PH] In create and send Global Commit func"<<endl;
     Message *mssg = Message::create_message(GLOBAL_COMMIT_2PC);
     Global_Commit_2PC *gmsg = (Global_Commit_2PC *)mssg;
     gmsg->init();
@@ -313,6 +313,7 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
     gmsg->rc_txn_id = txn_man->get_txn_id();
     gmsg->batch_id = txn_man->get_txn_id();
 
+    cout<<"[PH] Txn man in create and send global, txn_id"<<&txn_man<<"  "<<txn_man->get_txn_id()<<" address:"<<&txn_man<<endl;
     
 
     for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
@@ -346,6 +347,9 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), gmsg, emptyvec, dest);
 	dest.clear();
+
+    cout<<"[PH] Sending Execute for TxnID:"<<msg->txn_id<<endl;
+    send_execute_msg();
 
     return RCOK;  
 }
@@ -1062,7 +1066,7 @@ void WorkerThread::send_cross_shard_execute_msg()
  */
 RC WorkerThread::process_execute_msg(Message *msg)
 {
-    //cout << "EXECUTE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
+    //cout << "EXECUTOE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
     //fflush(stdout);
 
     uint64_t ctime = get_sys_clock();
@@ -1131,6 +1135,9 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     // Last Transaction of the batch.
     txn_man = get_transaction_manager(i, 0);
+
+    cout<<"[PH] Last Txn man at execute:, txn_id"<<"  "<<txn_man->get_txn_id()<<" address:"<<txn_man<<endl;
+
     while (true)
     {
         bool ready = txn_man->unset_ready();
@@ -1178,7 +1185,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     // End the execute counter.
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
-    cout<<"Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
+    cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
     return RCOK;
 }
 
