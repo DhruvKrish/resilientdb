@@ -104,6 +104,7 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
             fflush(stdout);*/
             // Transaction manager found.
             txn_man = t_node->txn_man;
+            cout<<"[PH] value of is_matching_txn_node for txn_id:"<<txn_id<<" batch id:"<<batch_id<<" is "<<is_matching_txn_node(t_node, txn_id, batch_id)<<" tman address: "<<txn_man<<endl;
             break;
         }
         t_node = t_node->next;

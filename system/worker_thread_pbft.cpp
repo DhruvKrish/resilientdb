@@ -389,11 +389,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
         if (isRefCommittee())
         {
-            if(txn_man->is_2PC_Vote_recvd())
-            {
-                send_execute_msg();
-            }
-            send_cross_shard_execute_msg();
+             send_cross_shard_execute_msg();
             
         }
         else if(isOtherShard())
