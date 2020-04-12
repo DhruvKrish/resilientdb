@@ -109,10 +109,13 @@ RC WorkerThread::process_batch(Message *msg)
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
-    if(breq->TwoPC_Commit_recvd && isOtherShard())
+    /*if(breq->TwoPC_Commit_recvd && isOtherShard())
     {cout<<"Before get_primarybatch check"<<endl;
     BatchRequests* test = txn_man->get_primarybatch();
-    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}
+    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}*/
+    cout<<"Before get_primarybatch check in process_batch"<<endl;
+    BatchRequests* test = txn_man->get_primarybatch();
+    cout<<"Get breq in process_batch txn_id: "<<txn_man->get_txn_id()<<" batchreq txn_id: "<<test->get_txn_id()<<endl;
 
     // Send Prepare messages.
     txn_man->send_pbft_prep_msgs();
@@ -247,11 +250,15 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
             <<txn_man->get_txn_id_RC()<<endl;*/
         if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;
+            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;
+            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
         fflush(stdout);
+
+        cout<<"Before get_primarybatch check in process_pbft_prep_msg prepared"<<endl;
+        BatchRequests* test = txn_man->get_primarybatch();
+        cout<<"Get breq in process_pbft_prep_msg prepared txn_id: "<<txn_man->get_txn_id()<<" batchreq txn_id: "<<test->get_txn_id()<<endl;
 
         // Send Commit messages.
         txn_man->send_pbft_commit_msgs();
@@ -370,6 +377,11 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
             cout<<"Inside process_pbft_commit: 2PC Commit set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
+
+        cout<<"Before get_primarybatch check in process_pbft_commit_msg"<<endl;
+        BatchRequests* test = txn_man->get_primarybatch();
+        cout<<"Get breq in process_pbft_commit_msg txn_id: "<<txn_man->get_txn_id()<<" batchreq txn_id: "<<test->get_txn_id()
+        <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
 
     cout<<"txn_id: "<<txn_man->get_txn_id()<<" txnman->cs: "<<txn_man->get_cross_shard_txn()<<endl;
     if(txn_man->get_cross_shard_txn())

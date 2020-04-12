@@ -1062,8 +1062,8 @@ void WorkerThread::send_cross_shard_execute_msg()
  */
 RC WorkerThread::process_execute_msg(Message *msg)
 {
-    //cout << "EXECUTE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
-    //fflush(stdout);
+    cout << "EXECUTE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
+    fflush(stdout);
 
     uint64_t ctime = get_sys_clock();
 
@@ -1130,7 +1130,15 @@ RC WorkerThread::process_execute_msg(Message *msg)
     }
 
     // Last Transaction of the batch.
-    txn_man = get_transaction_manager(i, 0);
+    if(isOtherShard())txn_man = get_transaction_manager(i, i);
+    else txn_man = get_transaction_manager(i, 0);
+    cout<<"Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
+    <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
+
+    cout<<"Before get_primarybatch check in process_execute_msg"<<endl;
+        BatchRequests* test = txn_man->get_primarybatch();
+        cout<<"Get breq in process_execute_msg txn_id: "<<txn_man->get_txn_id()<<" batchreq txn_id: "<<test->get_txn_id()<<endl;
+
     while (true)
     {
         bool ready = txn_man->unset_ready();
@@ -1151,7 +1159,9 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
 #if ENABLE_CHAIN
     // Add the block to the blockchain.
+    cout<<"Before add_block txn_id: "<<txn_man->get_txn_id();
     BlockChain->add_block(txn_man);
+    cout<<"After add_block txn_id: "<<txn_man->get_txn_id();
 #endif
 
     // Commit the results.
@@ -1358,7 +1368,8 @@ RC WorkerThread::process_pbft_chkpt_msg(Message *msg)
     // Release Txn Managers.
     for (uint64_t i = get_last_deleted_txn(); i < del_range; i++)
     {
-        release_txn_man(i, 0);
+        if(i%g_batch_size==g_batch_size-1 && isOtherShard()) release_txn_man(i, i);
+        else release_txn_man(i, 0);
         inc_last_deleted_txn();
 
 #if ENABLE_CHAIN
@@ -1638,10 +1649,11 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
-    /*if(!breq->TwoPC_Commit_recvd && isOtherShard())
-    {cout<<"Before get_primarybatch check"<<endl;
+    //if(!breq->TwoPC_Commit_recvd && isOtherShard())
+    cout<<"Before get_primarybatch check in create_and_send_batchreq"<<endl;
     BatchRequests* test = txn_man->get_primarybatch();
-    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}*/
+    cout<<"Get breq in create_and_send_batchreq txn_man txn_id: "<<txn_man->get_txn_id()
+    <<" batchreq txn_id: "<<test->get_txn_id()<<endl;
 
     // Storing all the signatures.
     vector<string> emptyvec;
