@@ -204,7 +204,8 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         else if (isRefCommittee() && g_node_id==0 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
             //cout<<"Checking if condtn"<<endl;
-            create_and_send_global_commit(msg);
+            //create_and_send_global_commit(msg);
+            send_execute_msg();
         } 
 
 
@@ -1138,9 +1139,6 @@ RC WorkerThread::process_execute_msg(Message *msg)
     cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
     <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
 
-    cout<<"Before get_primarybatch check in process_execute_msg"<<endl;
-        BatchRequests* test = txn_man->get_primarybatch();
-        cout<<"Get breq in process_execute_msg txn_id: "<<txn_man->get_txn_id()<<" batchreq txn_id: "<<test->get_txn_id()<<endl;
 
     while (true)
     {
@@ -1163,20 +1161,22 @@ RC WorkerThread::process_execute_msg(Message *msg)
 #if ENABLE_CHAIN
     // Add the block to the blockchain.
     cout<<"Before add_block txn_id: "<<txn_man->get_txn_id();
-    BlockChain->add_block(txn_man);
+    //BlockChain->add_block(txn_man);
     cout<<"After add_block txn_id: "<<txn_man->get_txn_id();
 #endif
 
     // Commit the results.
     txn_man->commit();
 
-    crsp->copy_from_txn(txn_man);
+    if(isRefCommittee())
+    {   crsp->copy_from_txn(txn_man);
 
-    vector<string> emptyvec;
-    vector<uint64_t> dest;
-    dest.push_back(txn_man->client_id);
-    msg_queue.enqueue(get_thd_id(), crsp, emptyvec, dest);
-    dest.clear();
+        vector<string> emptyvec;
+        vector<uint64_t> dest;
+        dest.push_back(txn_man->client_id);
+        msg_queue.enqueue(get_thd_id(), crsp, emptyvec, dest);
+        dest.clear();
+    }
 
     INC_STATS(_thd_id, tput_msg, 1);
     INC_STATS(_thd_id, msg_cl_out, 1);
@@ -1652,11 +1652,6 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
-    //if(!breq->TwoPC_Commit_recvd && isOtherShard())
-    cout<<"Before get_primarybatch check in create_and_send_batchreq"<<endl;
-    BatchRequests* test = txn_man->get_primarybatch();
-    cout<<"Get breq in create_and_send_batchreq txn_man txn_id: "<<txn_man->get_txn_id()
-    <<" batchreq txn_id: "<<test->get_txn_id()<<endl;
 
     // Storing all the signatures.
     vector<string> emptyvec;
@@ -1736,10 +1731,6 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
 
-    if(breq->TwoPC_Commit_recvd && isOtherShard())
-    {cout<<"Before get_primarybatch check"<<endl;
-    BatchRequests* test = txn_man->get_primarybatch();
-    cout<<"Get breq txn_id: "<<test->txn_id<<endl;}
 
     // Storing all the signatures.
     vector<string> emptyvec;
