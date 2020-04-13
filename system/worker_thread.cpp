@@ -204,8 +204,8 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         else if (isRefCommittee() && g_node_id==0 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
             //cout<<"Checking if condtn"<<endl;
-            //create_and_send_global_commit(msg);
-            send_execute_msg();
+            create_and_send_global_commit(msg);
+            //send_execute_msg();
         } 
 
 
@@ -1182,7 +1182,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     INC_STATS(_thd_id, msg_cl_out, 1);
 
     // Check and Send checkpoint messages.
-    send_checkpoints(txn_man->get_txn_id());
+    //send_checkpoints(txn_man->get_txn_id());
     cout<<"Successful execute1: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // Setting the next expected prepare message id.
