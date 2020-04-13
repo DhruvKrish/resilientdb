@@ -198,12 +198,15 @@ RC ClientThread::run()
 
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
-		//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
-		clqry->cross_shard_txn=true;
-		//All requests are shard transactions between shard numbers 1 and 2
-		clqry->shards_involved.init(3);
-		clqry->shards_involved.add((uint64_t)0);
-		clqry->shards_involved.add((uint64_t)1);
+		if(addMore == g_batch_size-1 || addMore == g_batch_size-2)
+		{
+			//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
+			clqry->cross_shard_txn=true;
+			//All requests are shard transactions between shard numbers 1 and 2
+			clqry->shards_involved.init(2);
+			clqry->shards_involved.add((uint64_t)0);
+			clqry->shards_involved.add((uint64_t)1);
+		}
 
 
 		bmsg->cqrySet.add(clqry);
