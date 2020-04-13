@@ -226,10 +226,10 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
     rmsg->rc_txn_id = emsg->end_index;
     rmsg->batch_id = emsg->end_index;
 
-       
-    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    BatchRequests* breqdeepcopy = txn_man->get_primarybatch();
+    for (uint64_t i=0; i<breqdeepcopy->requestMsg.size(); i++)
     {
-        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)breqdeepcopy->requestMsg[i];
         clqry->return_node = txn_man->client_id;
         rmsg->cqrySet.add(clqry);
                
@@ -276,9 +276,10 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
     vmsg->batch_id = 0;
 
 
-    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    BatchRequests* breqdeepcopy = txn_man->get_primarybatch();
+    for (uint64_t i=0; i<breqdeepcopy->requestMsg.size(); i++)
     {
-        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)breqdeepcopy->requestMsg[i];
         clqry->return_node = txn_man->client_id;
         vmsg->cqrySet.add(clqry);
                
@@ -316,9 +317,10 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
 
     cout<<"[PH] Txn man in create and send global, txn_id"<<&txn_man<<"  "<<txn_man->get_txn_id()<<" address:"<<&txn_man<<endl;
 
-    for (uint64_t i=0; i<txn_man->batchreq->requestMsg.size(); i++)
+    BatchRequests* breqdeepcopy = txn_man->get_primarybatch();
+    for (uint64_t i=0; i<breqdeepcopy->requestMsg.size(); i++)
     {
-        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)txn_man->batchreq->requestMsg[i];
+        YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)breqdeepcopy->requestMsg[i];
         clqry->return_node = txn_man->client_id;
         gmsg->cqrySet.add(clqry);
                
@@ -1161,7 +1163,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
 #if ENABLE_CHAIN
     // Add the block to the blockchain.
     cout<<"Before add_block txn_id: "<<txn_man->get_txn_id();
-    //BlockChain->add_block(txn_man);
+    BlockChain->add_block(txn_man);
     cout<<"After add_block txn_id: "<<txn_man->get_txn_id();
 #endif
 
@@ -1182,7 +1184,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     INC_STATS(_thd_id, msg_cl_out, 1);
 
     // Check and Send checkpoint messages.
-    //send_checkpoints(txn_man->get_txn_id());
+    send_checkpoints(txn_man->get_txn_id());
     cout<<"Successful execute1: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // Setting the next expected prepare message id.
@@ -1711,7 +1713,7 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     // Creating a new BatchRequests Message.
     Message *bmsg = Message::create_message(BATCH_REQ);
     BatchRequests *breq = (BatchRequests *)bmsg;
-    breq->init(get_thd_id());
+    /*breq->init(get_thd_id());
 
     for (uint64_t i = 0; i < get_batch_size(); i++)
     {
@@ -1724,13 +1726,11 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         // Setting up data for BatchRequests Message.
         breq->requestMsg[i] = yqry;
         breq->index.add(tid-get_batch_size()+1+i);
-    }
+    }*/
+
+    breq = txn_man->get_primarybatch();
 
     breq->copy_from_txn(txn_man);
-
-    // Storing the BatchRequests message.
-    txn_man->set_primarybatch(breq);
-
 
     // Storing all the signatures.
     vector<string> emptyvec;
