@@ -1816,28 +1816,31 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
     if(count_2PC_vote.find(msg->rc_txn_id) == count_2PC_vote.end()) {
         cout << "Inside setting shard size: " << total_shards << "\n";
         fflush(stdout);
+        cout << "return node id: " << msg->return_node_id << endl;
+        uint64_t shard_no = (msg->return_node_id)/g_shard_size;
+        cout << "shard no: " << shard_no << endl;
         // total_shards + 1 will hold the count for receiving from f shards
         vector<uint64_t> shards_count(total_shards + 1, g_min_invalid_nodes);
-        cout << "This is ok" << endl;
+        //cout << "This is ok" << endl;
         count_2PC_vote.insert({msg->rc_txn_id, shards_count});
-        cout << "Was this ok" << endl;
+        //cout << "Was this ok" << endl;
         fflush(stdout);
     }
     else {
         cout << "Return node id " << msg->return_node_id << endl;
-        uint64_t shard_no = (msg->return_node_id)%g_shard_size;
+        uint64_t shard_no = (msg->return_node_id)/g_shard_size;
         cout << "Inside else: " << shard_no << endl;
         fflush(stdout);
-        if(--count_2PC_vote[msg->return_node_id][shard_no] == 0) {
-            count_2PC_vote[msg->return_node_id][total_shards]--;
+        if(--count_2PC_vote[msg->rc_txn_id][shard_no] == 0) {
+            count_2PC_vote[msg->rc_txn_id][total_shards]--;
         }
     }
 
     // If count is f + 1, then set txn_man
-    if(count_2PC_vote[msg->return_node_id][total_shards] == 0) {
+    if(count_2PC_vote[msg->rc_txn_id][total_shards] == 0) {
         cout << "Received Vote f + 1 for "<< msg->rc_txn_id << endl;
         fflush(stdout);
-        count_2PC_vote.erase(msg->return_node_id);
+        count_2PC_vote.erase(msg->rc_txn_id);
         txn_man->prepared = false;
         txn_man->committed_local = false;
         txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
