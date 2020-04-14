@@ -191,12 +191,12 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
         } */
     //if current node is reference committee, phase -> Cross shard transaction received from client  
-        if(isRefCommittee() && is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+        if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
         }
-        else if (isOtherShard() && is_primary_node(get_thd_id(),g_node_id) && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+        else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
             //cout<<"Checking if condtn"<<endl;
             create_and_send_Vote_2PC(msg);
