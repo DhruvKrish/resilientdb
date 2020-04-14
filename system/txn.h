@@ -150,6 +150,7 @@ public:
     // by the primary. We only maintain in last request of the batch. 
     BatchRequests *batchreq;  
     void set_primarybatch(BatchRequests *breq);
+    BatchRequests* get_primarybatch();
 
     vector<string> allsign;
 

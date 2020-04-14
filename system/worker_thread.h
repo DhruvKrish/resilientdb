@@ -52,6 +52,8 @@ public:
     void send_cross_shard_execute_msg();
     RC process_cross_shard_execute_msg(Message *msg);
 
+    RC send_client_response(Message *msg);
+
     bool isRefCommittee();
     bool isOtherShard();
 

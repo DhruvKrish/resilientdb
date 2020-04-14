@@ -12,7 +12,7 @@
 void TxnTable::init()
 {
     DEBUG_M("TxnTable::init pool_node alloc\n");
-    pool_size = indexSize + 1;
+    pool_size = g_batch_size;
     pool = (pool_node **)mem_allocator.align_alloc(sizeof(pool_node *) * pool_size);
     for (uint32_t i = 0; i < pool_size; i++)
     {
@@ -104,6 +104,7 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
             fflush(stdout);*/
             // Transaction manager found.
             txn_man = t_node->txn_man;
+            //cout<<"[PH] value of is_matching_txn_node for txn_id:"<<txn_id<<" batch id:"<<batch_id<<" is "<<is_matching_txn_node(t_node, txn_id, batch_id)<<" tman address: "<<txn_man<<endl;
             break;
         }
         t_node = t_node->next;
@@ -132,6 +133,7 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         //Set 2PC Request Received flag if txn is cross sharded.
         //We will only create a txn_man when shards receive 2PC_Request.
         if(txn_man->get_txn_id_RC() != 0) txn_man->set_2PC_Request_recvd();
+        else txn_man->TwoPC_Request_recvd=false;
 
         t_node->txn_man = txn_man;
         txn_man->txn_stats.starttime = get_sys_clock();
@@ -161,6 +163,7 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
 {
     uint64_t starttime = get_sys_clock();
     DEBUG_Q("release txm_mgr: thd_id=%lu, txn_id=%lu, batch_id=%lu\n", thd_id, txn_id, batch_id);
+    cout<<"Releasing txn_man txn_id: "<<txn_id<<endl;
     uint64_t pool_id = txn_id % pool_size;
 
     // Lock the pool before access.
@@ -187,20 +190,26 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
     // unset modify bit for this pool: txn_id % pool_size
     ATOM_CAS(pool[pool_id]->modify, true, false);
 
+    cout<<"check1"<<endl;
     //assert(t_node);
     if (t_node == NULL)
     {
+        cout<<"check2"<<endl;
         cout << "txn: " << txn_id;
         assert(0);
     }
+    cout<<"check3"<<endl;
     assert(t_node->txn_man);
 
+    cout<<"check4"<<endl;
     // Releasing the txn manager.
     txn_man_pool.put(txn_id, t_node->txn_man);
 
+    cout<<"check5"<<endl;
     // Releasing the node associated with the txn_mann
     txn_table_pool.put(txn_id, t_node);
 
+    cout<<"check6"<<endl;
     INC_STATS(thd_id, txn_table_release_time, get_sys_clock() - starttime);
     INC_STATS(thd_id, txn_table_release_cnt, 1);
 }
