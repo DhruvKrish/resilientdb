@@ -919,6 +919,9 @@ bool ClientResponseMessage::validate()
 		clrspStore[relIndex][i] = clrsp;
 	}
 
+	cout << "Validated TXN: " << this->txn_id << " :: LT: " << get_last_valid_txn() << "\n";
+	fflush(stdout);
+
 	return true;
 }
 

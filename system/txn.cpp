@@ -151,7 +151,7 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     prepared = false;
     committed_local = false;
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt;
+    commit_rsp_cnt = prep_rsp_cnt+1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     //Counters of 2PC messages
@@ -202,7 +202,7 @@ void TxnManager::release(uint64_t pool_id)
     prepared = false;
 
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt;
+    commit_rsp_cnt = prep_rsp_cnt+1;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
     //Counters of 2PC messages
     TwoPC_Request_cnt=g_min_invalid_nodes+1;
@@ -476,7 +476,7 @@ void TxnManager::add_commit_msg(PBFTCommitMessage *pcmsg)
 
 uint64_t TxnManager::decr_commit_rsp_cnt()
 {
-    commit_rsp_cnt--;
+    if(commit_rsp_cnt>0) commit_rsp_cnt--;
     return commit_rsp_cnt;
 }
 
@@ -597,7 +597,7 @@ void TxnManager::send_pbft_prep_msgs()
 //broadcasts commit message to all nodes
 void TxnManager::send_pbft_commit_msgs()
 {
-    //cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
+    cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
 
     Message *msg = Message::create_message(this, PBFT_COMMIT_MSG);
     PBFTCommitMessage *cmsg = (PBFTCommitMessage *)msg;

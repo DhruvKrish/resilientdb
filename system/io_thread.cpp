@@ -208,8 +208,8 @@ RC InputThread::client_recv_loop()
                 continue;
             }
 
-            //cout<<"Node: "<<msg->return_node_id <<" :: Txn: "<< msg->txn_id <<"\n";
-            //fflush(stdout);
+            cout<<"Node: "<<msg->return_node_id <<" :: Txn: "<< msg->txn_id <<"\n";
+            fflush(stdout);
 
             return_node_offset = get_view();
             if (msg->rtype != CL_RSP)

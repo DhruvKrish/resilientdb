@@ -218,12 +218,12 @@ RC WorkerThread::process_batch(Message *msg)
  */
 RC WorkerThread::process_pbft_prep_msg(Message *msg)
 {
-    if(txn_man->is_2PC_Commit_recvd()){
-        cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        cout << "PBFTPrepMessage: TID: " << msg->txn_id << " FROM: " << msg->return_node_id
+        << " rc_txn_id: "<<txn_man->get_txn_id_RC()
+        <<" prep_rsp_count: "<<txn_man->prep_rsp_cnt<<endl;
         cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
         cout << "is_2PC_Vote_recvd: "<< txn_man->is_2PC_Vote_recvd()<<endl;
         fflush(stdout);
-    }
 
     // Start the counter for prepare phase.
     if (txn_man->prep_rsp_cnt == 2 * g_min_invalid_nodes)
@@ -242,11 +242,11 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
             cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;*/
         if(txn_man->is_2PC_Vote_recvd())
-            cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
+            cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. txn_id: "
+            <<txn_man->get_txn_id()<<" txn_id_RC: "<<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
-            cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
+            cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. txn_id: "
+            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
 
 
@@ -306,9 +306,10 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
     }
 
     uint64_t comm_cnt = txn_man->decr_commit_rsp_cnt();
-    if(txn_man->is_2PC_Commit_recvd()) cout<<"Commit count decremented:"<<comm_cnt<<" txn_id: "<<txn_man->get_txn_id()<<endl;
+    if(txn_man->is_2PC_Vote_recvd()) cout<<"Commit count decremented:"<<comm_cnt<<" txn_id: "<<txn_man->get_txn_id()<<endl;
     if (comm_cnt == 0 && txn_man->is_prepared())
     {
+        if(txn_man->is_2PC_Vote_recvd()) cout<<"setting committed txn_id: "<<txn_man->get_txn_id()<<endl;
         txn_man->set_committed();
         return true;
     }
@@ -328,14 +329,12 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
  */
 RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
-    if(txn_man->is_2PC_Commit_recvd()){
         cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
         " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()
         <<" commit_rsp_count: "<<txn_man->commit_rsp_cnt<<endl;
         fflush(stdout);
-    }
 
-    if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes)
+    if (txn_man->commit_rsp_cnt == 2 * g_min_invalid_nodes+1)
     {
         txn_man->txn_stats.time_start_commit = get_sys_clock();
     }

@@ -215,6 +215,7 @@ RC ClientThread::run()
 		// Resetting and sending the message
 		if (addMore == g_batch_size)
 		{
+			cout<<"addMore in client is 99. Making batch."<<endl;
 			bmsg->sign(next_node_id); // Sign the message.
 
 #if TIMER_ON

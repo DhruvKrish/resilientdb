@@ -85,6 +85,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     }
     else if (msg->rtype == EXECUTE_MSG)
     {
+        cout<<"In enqueue EXECUTE_MSG txn_id: "<<msg->txn_id<<endl;
         uint64_t bid = ((msg->txn_id + 2) - get_batch_size()) / get_batch_size();
         uint64_t qid = bid % indexSize;
         while (!work_queue[qid + 1]->push(entry) && !simulation->is_done())
