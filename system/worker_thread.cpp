@@ -185,6 +185,11 @@ bool WorkerThread::isOtherShard()
 
 RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
 {
+        //Reset prepare and commit variables
+        txn_man->prepared = false;
+        txn_man->committed_local = false;
+        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes+1;
 
         /* if(isOtherShard())
         {
@@ -911,9 +916,9 @@ RC WorkerThread::run()
             INC_STATS(_thd_id, worker_idle_time, get_sys_clock() - idle_starttime);
             idle_starttime = 0;
         }
-        if(msg->rtype == GLOBAL_COMMIT_2PC)
+        if(msg->rtype == REQUEST_2PC)
         {
-            cout<<"Global Commit 2PC dequeued"<<endl;
+            cout<<"Request_2PCBatch dequeued txn_id: "<<msg->txn_id<<" rc_txn_id: "<<msg->batch_id<<endl;
         }
 
 
@@ -1518,18 +1523,10 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         <<" txn_man hash: "<<txn_man->get_hash()<<endl;*/
     }
     if(breq->TwoPC_Vote_recvd) {
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes+1;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
     if(breq->TwoPC_Commit_recvd) {
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes+1;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }
@@ -1696,18 +1693,14 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     cout<<"In send_batchreq_2PC for tid: "<<tid<<endl;
 
     if(msg->rtype == VOTE_2PC){
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt+1;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
     else if(msg->rtype == GLOBAL_COMMIT_2PC){
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt+1;
+        // txn_man->prepared = false;
+        // txn_man->committed_local = false;
+        // txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
+        // txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt+1;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }

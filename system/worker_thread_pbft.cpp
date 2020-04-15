@@ -173,15 +173,15 @@ RC WorkerThread::process_batch(Message *msg)
         }
     }
 
-    /*if(txn_man->is_2PC_Request_recvd())
+    if(txn_man->is_2PC_Request_recvd())
         cout<<"Inside process_batch: 2PC request set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;*/
+        <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
     if(txn_man->is_2PC_Vote_recvd())
         cout<<"Inside process_batch: 2PC vote set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;
+        <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
     if(txn_man->is_2PC_Commit_recvd())
         cout<<"Inside process_batch: 2PC commit set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;
+        <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
     fflush(stdout);
 
     // Release this txn_man for other threads to use.
@@ -238,9 +238,9 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
     // Check if sufficient number of Prepare messages have arrived.
     if (prepared(pmsg))
     {
-        /*if(txn_man->is_2PC_Request_recvd())
+        if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;*/
+            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
         if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" txn_id_RC: "<<txn_man->get_txn_id_RC()<<endl;
@@ -356,9 +356,9 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         // End the timer for this client batch.
         server_timer->endTimer(txn_man->hash);
 #endif
-        /*if(txn_man->is_2PC_Request_recvd())
+        if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;*/
+            <<txn_man->get_txn_id_RC()<<" txn_id: "<<txn_man->get_txn_id()<<endl;
         if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_commit: 2PC vote set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
