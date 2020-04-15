@@ -149,9 +149,13 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     txn_ready = true;
 
     prepared = false;
+    prepared2 = false;
     committed_local = false;
+    committed_local2 = false;
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
     commit_rsp_cnt = prep_rsp_cnt+1;
+    prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt2 = prep_rsp_cnt2+1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     //Counters of 2PC messages
@@ -200,9 +204,12 @@ void TxnManager::release(uint64_t pool_id)
 
     hash.clear();
     prepared = false;
+    prepared2 = false;
 
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
     commit_rsp_cnt = prep_rsp_cnt+1;
+    prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt2 = prep_rsp_cnt2+1;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
     //Counters of 2PC messages
     TwoPC_Request_cnt=g_min_invalid_nodes+1;
@@ -451,6 +458,27 @@ uint64_t TxnManager::get_prep_rsp_cnt()
     return prep_rsp_cnt;
 }
 
+void TxnManager::set_prepared2()
+{
+    prepared2 = true;
+}
+
+bool TxnManager::is_prepared2()
+{
+    return prepared2;
+}
+
+uint64_t TxnManager::decr_prep_rsp_cnt2()
+{
+    prep_rsp_cnt2--;
+    return prep_rsp_cnt2;
+}
+
+uint64_t TxnManager::get_prep_rsp_cnt2()
+{
+    return prep_rsp_cnt2;
+}
+
 /************************************/
 
 /* Helper functions for PBFT. */
@@ -476,13 +504,44 @@ void TxnManager::add_commit_msg(PBFTCommitMessage *pcmsg)
 
 uint64_t TxnManager::decr_commit_rsp_cnt()
 {
-    if(commit_rsp_cnt>0) commit_rsp_cnt--;
+    commit_rsp_cnt--;
     return commit_rsp_cnt;
 }
 
 uint64_t TxnManager::get_commit_rsp_cnt()
 {
     return commit_rsp_cnt;
+}
+
+
+void TxnManager::set_committed2()
+{
+    committed_local2 = true;
+}
+
+bool TxnManager::is_committed2()
+{
+    return committed_local2;
+}
+
+
+/*void TxnManager::add_commit_msg2(PBFTCommitMessage *pcmsg)
+{
+	char *buf = create_msg_buffer(pcmsg);
+	Message *deepMsg = deep_copy_msg(buf, pcmsg);
+	commit_msgs.push_back((PBFTCommitMessage *)deepMsg);
+	delete_msg_buffer(buf);
+}*/
+
+uint64_t TxnManager::decr_commit_rsp_cnt2()
+{
+    commit_rsp_cnt2--;
+    return commit_rsp_cnt2;
+}
+
+uint64_t TxnManager::get_commit_rsp_cnt2()
+{
+    return commit_rsp_cnt2;
 }
 
 /*****************************/
