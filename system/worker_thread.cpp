@@ -1995,7 +1995,7 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
         return false;
     }
     // important to have else if not 0, otherwise count "could" go negative
-    else if (count_2PC_global_commit[msg->rc_txn_id]){
+    else if (count_2PC_global_commit[msg->rc_txn_id] != 0){
         cout << "Commit: Decrementing count from: " << count_2PC_global_commit[msg->rc_txn_id] << endl;
         fflush(stdout);
 
