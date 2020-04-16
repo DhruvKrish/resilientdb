@@ -1146,7 +1146,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     }
 
     // Last Transaction of the batch.
-    if(isOtherShard())txn_man = get_transaction_manager(i, i);
+    if(isOtherShard())txn_man = get_transaction_manager(i, msg->batch_id);
     else txn_man = get_transaction_manager(i, 0);
     cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
     <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
