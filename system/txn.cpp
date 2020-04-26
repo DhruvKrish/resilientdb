@@ -203,6 +203,7 @@ void TxnManager::release(uint64_t pool_id)
     txn_ready = true;
 
     hash.clear();
+    hash2.clear();
     prepared = false;
     prepared2 = false;
 
@@ -384,15 +385,31 @@ string TxnManager::get_hash()
     return hash;
 }
 
+string TxnManager::get_hash2()
+{
+    return hash2;
+}
+
 void TxnManager::set_hash(string hsh)
 {
     hash = hsh;
     hashSize = hash.length();
 }
 
+void TxnManager::set_hash2(string hsh)
+{
+    hash2 = hsh;
+    hashSize2 = hash2.length();
+}
+
 uint64_t TxnManager::get_hashSize()
 {
     return hashSize;
+}
+
+uint64_t TxnManager::get_hashSize2()
+{
+    return hashSize2;
 }
 
 

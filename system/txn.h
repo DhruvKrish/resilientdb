@@ -146,6 +146,12 @@ public:
     void set_hash(string hsh);
     uint64_t get_hashSize();
 
+    string hash2;       // Hash of the client query for second local pbft.
+    uint64_t hashSize2; // Size of hash in second local pbft
+    string get_hash2();
+    void set_hash2(string hsh);
+    uint64_t get_hashSize2();
+
     // We need to maintain one copy of the whole BatchRequests messages sent 
     // by the primary. We only maintain in last request of the batch. 
     BatchRequests *batchreq;  

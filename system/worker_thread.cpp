@@ -97,7 +97,12 @@ void WorkerThread:: process(Message *msg)
         rc = process_client_batch(msg);
         break;
     case BATCH_REQ:
-        rc = process_batch(msg);
+        {
+            BatchRequests *breq_check = (BatchRequests *)msg;
+            //Check which local pbft the batchrequest corresponds to
+            if(breq_check->TwoPC_Vote_recvd) rc = process_batch2(msg);
+            else rc = process_batch(msg);
+        }
         break;
     case PBFT_CHKPT_MSG:
         rc = process_pbft_chkpt_msg(msg);
@@ -130,10 +135,18 @@ void WorkerThread:: process(Message *msg)
         break;
 #endif
     case PBFT_PREP_MSG:
-        rc = process_pbft_prep_msg(msg);
-        break;
+        {
+            PBFTPrepMessage *pmsg_check = (PBFTPrepMessage *)msg;
+            if(pmsg_check->first_local_pbft) rc = process_pbft_prep_msg(msg);
+            else rc = process_pbft_prep_msg2(msg);
+        }
+            break;
     case PBFT_COMMIT_MSG:
-        rc = process_pbft_commit_msg(msg);
+        {
+            PBFTCommitMessage *pcmsg_check = (PBFTCommitMessage *)msg;
+            if(pcmsg_check->first_local_pbft) rc = process_pbft_commit_msg(msg);
+            else rc = process_pbft_commit_msg2(msg);
+        }
         break;
     case REQUEST_2PC:
         cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
@@ -1505,7 +1518,8 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         }
     }
 
-    txn_man->set_hash(breq->hash);
+    if(!breq->TwoPC_Vote_recvd) txn_man->set_hash(breq->hash);
+    else txn_man->set_hash2(breq->hash);
     
     //Set 2PC state info accoring to 2PC flag set in BatchRequest
     if(breq->TwoPC_Request_recvd){
@@ -1518,18 +1532,10 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         <<" txn_man hash: "<<txn_man->get_hash()<<endl;*/
     }
     if(breq->TwoPC_Vote_recvd) {
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes+1;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
     if(breq->TwoPC_Commit_recvd) {
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = 2 * g_min_invalid_nodes+1;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }
@@ -1644,9 +1650,18 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         }
     }
 
-    // Generating the hash representing the whole batch in last txn man.
-    txn_man->set_hash(calculateHash(batchStr));
-    txn_man->hashSize = txn_man->hash.length();
+    if(!txn_man->is_2PC_Vote_recvd())
+    {
+        // Generating the hash representing the whole batch in last txn man.
+        txn_man->set_hash(calculateHash(batchStr));
+        txn_man->hashSize = txn_man->hash.length();
+    }
+    //For second local pbft
+    else{
+        // Generating the hash2 representing the whole batch in last txn man.
+        txn_man->set_hash2(calculateHash(batchStr));
+        txn_man->hashSize2 = txn_man->hash.length();
+    }
 
     breq->copy_from_txn(txn_man);
     //Check 2PC info in batch
@@ -1903,6 +1918,57 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
     if (prep_cnt == 0)
     {
         txn_man->set_prepared();
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Checks if the incoming PBFTPrepMessage can be accepted in the second local pbft.
+ *
+ * This functions checks if the hash and view of the commit message matches that of 
+ * the Pre-Prepare message. Once 2f messages are received it returns a true and 
+ * sets the `is_prepared` flag for furtue identification.
+ *
+ * @param msg PBFTPrepMessage.
+ * @return bool True if the transactions of this batch are prepared.
+ */
+bool WorkerThread::prepared2(PBFTPrepMessage *msg)
+{
+    cout << "Inside PREPARED2: " << txn_man->get_txn_id() << " prep count2: " << txn_man->get_prep_rsp_cnt()<<endl;
+    fflush(stdout);
+
+    // Once prepared is set, no processing for further messages.
+    if (txn_man->is_prepared2())
+    {
+        return false;
+    }
+
+    // If BatchRequests messages has not arrived yet, then return false.
+    if (txn_man->get_hash2().empty())
+    {
+        //cout<<"Batchrequest not received txn_id: "<<txn_man->get_txn_id()<<endl;
+        // Store the message.
+        txn_man->info_prepare2.push_back(msg->return_node);
+        return false;
+    }
+    else
+    {
+        if (!checkMsg(msg))
+        {
+            // If message did not match.
+            cout << txn_man->get_hash2() << " :: " << msg->hash << "\n";
+            cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
+            fflush(stdout);
+            return false;
+        }
+    }
+
+    uint64_t prep_cnt = txn_man->decr_prep_rsp_cnt2();
+    if (prep_cnt == 0)
+    {
+        txn_man->set_prepared2();
         return true;
     }
 

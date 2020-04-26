@@ -1520,12 +1520,19 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
 	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 
-	// Storing the representative hash of the batch.
-	this->hash = txn->hash;
-	this->hashSize = txn->hashSize;
-	// Use these lines for testing plain hash function.
-	//string message = "anc_def";
-	//this->hash.add(calculateHash(message));
+	if(!txn->is_2PC_Vote_recvd())
+	{
+		// Storing the representative hash of the batch.
+		this->hash = txn->hash;
+		this->hashSize = txn->hashSize;
+		// Use these lines for testing plain hash function.
+		//string message = "anc_def";
+		//this->hash.add(calculateHash(message));
+	}
+	else{
+		this->hash = txn->hash2;
+		this->hashSize = txn->hashSize2;
+	}
 }
 
 void BatchRequests::release()
