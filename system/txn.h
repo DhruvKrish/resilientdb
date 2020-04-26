@@ -162,6 +162,7 @@ public:
     void set_rc(RC rc) { txn->rc = rc; }
 
     bool prepared = false;
+    bool prepared2 = false;
     uint64_t cbatch;
 
     //Counters of 2PC messages
@@ -190,17 +191,29 @@ public:
 
     uint64_t prep_rsp_cnt;
     vector<uint64_t> info_prepare;
+    //Variables to handle the second local PBFT in 2PC
+    uint64_t prep_rsp_cnt2;
+    vector<uint64_t> info_prepare2;
 
     uint64_t decr_prep_rsp_cnt();
     uint64_t get_prep_rsp_cnt();
     bool is_prepared();
     void set_prepared();
+    //Variables to handle the second local PBFT in 2PC
+    uint64_t decr_prep_rsp_cnt2();
+    uint64_t get_prep_rsp_cnt2();
+    bool is_prepared2();
+    void set_prepared2();
 
     void send_pbft_prep_msgs();
 
     uint64_t commit_rsp_cnt;
     bool committed_local = false;
     vector<uint64_t> info_commit;
+    //Variables to handle the second local PBFT in 2PC
+    uint64_t commit_rsp_cnt2;
+    bool committed_local2 = false;
+    vector<uint64_t> info_commit2;
 
     // We need to store all the complete Commit mssg in the last txn of batch.
     vector<PBFTCommitMessage *> commit_msgs; 
@@ -210,6 +223,11 @@ public:
     uint64_t get_commit_rsp_cnt();
     bool is_committed();
     void set_committed();
+    //Variables to handle the second local PBFT in 2PC
+    uint64_t decr_commit_rsp_cnt2();
+    uint64_t get_commit_rsp_cnt2();
+    bool is_committed2();
+    void set_committed2();
 
     void send_pbft_commit_msgs();
 
