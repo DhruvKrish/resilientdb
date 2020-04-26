@@ -626,6 +626,10 @@ void TxnManager::send_pbft_prep_msgs()
     Message *msg = Message::create_message(this, PBFT_PREP_MSG);
     PBFTPrepMessage *pmsg = (PBFTPrepMessage *)msg;
 
+    //Assign which local pbft the message is for
+    if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) pmsg->first_local_pbft = true;
+    else pmsg->first_local_pbft = false;
+
 #if LOCAL_FAULT == true || VIEW_CHANGES
     if (get_prep_rsp_cnt() > 0)
     {
@@ -660,6 +664,10 @@ void TxnManager::send_pbft_commit_msgs()
 
     Message *msg = Message::create_message(this, PBFT_COMMIT_MSG);
     PBFTCommitMessage *cmsg = (PBFTCommitMessage *)msg;
+
+    //Assign which local pbft the message is for
+    if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) cmsg->first_local_pbft = true;
+    else cmsg->first_local_pbft = false;
 
 #if LOCAL_FAULT == true || VIEW_CHANGES
     if (get_commit_rsp_cnt() > 0)
