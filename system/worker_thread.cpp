@@ -113,7 +113,7 @@ void WorkerThread:: process(Message *msg)
         break;
     case EXECUTE_MSG:
         {
-            cout<<"[PH] Received Execute Msg for txn ID"<<msg->txn_id<<endl;
+            cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
             txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
             Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
             if(isRefCommittee() && !shardsInvolved.contains(0))
@@ -1154,7 +1154,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     }
 
     // Last Transaction of the batch.
-    if(isOtherShard())txn_man = get_transaction_manager(i, i);
+    if(isOtherShard())txn_man = get_transaction_manager(i, msg->batch_id);
     else txn_man = get_transaction_manager(i, 0);
     cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
     <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
@@ -1897,7 +1897,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
     // If BatchRequests messages has not arrived yet, then return false.
     if (txn_man->get_hash().empty())
     {
-        //cout<<"Batchrequest not received txn_id: "<<txn_man->get_txn_id()<<endl;
+        cout<<"Batchrequest not received txn_id: "<<txn_man->get_txn_id()<<endl;
         // Store the message.
         txn_man->info_prepare.push_back(msg->return_node);
         return false;
@@ -1936,7 +1936,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
  */
 bool WorkerThread::prepared2(PBFTPrepMessage *msg)
 {
-    cout << "Inside PREPARED2: " << txn_man->get_txn_id() << " prep count2: " << txn_man->get_prep_rsp_cnt()<<endl;
+    cout << "Inside PREPARED2: " << txn_man->get_txn_id() << " prep count2: " << txn_man->get_prep_rsp_cnt2()<<endl;
     fflush(stdout);
 
     // Once prepared is set, no processing for further messages.
@@ -1946,9 +1946,9 @@ bool WorkerThread::prepared2(PBFTPrepMessage *msg)
     }
 
     // If BatchRequests messages has not arrived yet, then return false.
-    if (txn_man->get_hash2().empty())
+    if (txn_man->get_hash().empty())
     {
-        //cout<<"Batchrequest not received txn_id: "<<txn_man->get_txn_id()<<endl;
+        cout<<"Batchrequest2 not received txn_id: "<<txn_man->get_txn_id()<<endl;
         // Store the message.
         txn_man->info_prepare2.push_back(msg->return_node);
         return false;

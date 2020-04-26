@@ -547,7 +547,7 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 bool WorkerThread::committed_local2(PBFTCommitMessage *msg)
 {
     if(txn_man->is_2PC_Vote_recvd()){
-        //cout << "Check Commit2: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
+        cout << "Check Commit2: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
         fflush(stdout);
     }
 
@@ -558,7 +558,7 @@ bool WorkerThread::committed_local2(PBFTCommitMessage *msg)
     }
 
     // If BatchRequests messages has not arrived, then hash2 is empty; return false.
-    if (txn_man->get_hash2().empty())
+    if (txn_man->get_hash().empty())
     {
         if(txn_man->is_2PC_Vote_recvd()){
             cout << "committed_local2 hash2 empty: " << txn_man->get_txn_id() << "\n";
