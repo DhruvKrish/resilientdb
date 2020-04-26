@@ -41,6 +41,8 @@ public:
     bool checkMsg(Message *msg);
     RC process_client_batch(Message *msg);
     RC process_batch(Message *msg);
+    //For 2nd local pbft
+    RC process_batch2(Message *msg);
     void send_checkpoints(uint64_t txn_id);
     RC process_pbft_chkpt_msg(Message *msg);
 
@@ -78,9 +80,15 @@ public:
 
     bool prepared(PBFTPrepMessage *msg);
     RC process_pbft_prep_msg(Message *msg);
+    //For 2nd local pbft
+    bool prepared2(PBFTPrepMessage *msg);
+    RC process_pbft_prep_msg2(Message *msg);
 
     bool committed_local(PBFTCommitMessage *msg);
     RC process_pbft_commit_msg(Message *msg);
+    //For 2nd local pbft
+    bool committed_local2(PBFTCommitMessage *msg);
+    RC process_pbft_commit_msg2(Message *msg);
 
     //Methods for 2PC message processing
     RC process_request_2pc(Message *msg);
