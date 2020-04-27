@@ -1188,7 +1188,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     // Commit the results.
     txn_man->commit();
 
-    if(isRefCommittee())
+    if((txn_man->get_cross_shard_txn() && isRefCommittee()) || !txn_man->get_cross_shard_txn())
     {   crsp->copy_from_txn(txn_man);
 
         vector<string> emptyvec;
@@ -1391,7 +1391,8 @@ RC WorkerThread::process_pbft_chkpt_msg(Message *msg)
     // Release Txn Managers.
     for (uint64_t i = get_last_deleted_txn(); i < del_range; i++)
     {
-        if(i%g_batch_size==g_batch_size-1 && isOtherShard()) release_txn_man(i, i);
+        //cout<<"For chkpt txn_id: "<<msg->txn_id<<" Releasing txn_id: "<<i<<" chkpt msg batch_id: "<<msg->batch_id<<endl;
+        if(i%g_batch_size==g_batch_size-1 && isOtherShard()) release_txn_man(i, 0);
         else release_txn_man(i, 0);
         inc_last_deleted_txn();
 

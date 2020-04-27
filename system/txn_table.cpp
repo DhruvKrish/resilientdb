@@ -46,7 +46,7 @@ bool TxnTable::is_matching_txn_node(txn_node_t t_node, uint64_t txn_id, uint64_t
     if(batch_id != 0) 
         return (t_node->txn_man->get_batch_id() == batch_id);
     else 
-        return (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id);
+        return (t_node->txn_man->get_txn_id() == txn_id);
 }
 
 void TxnTable::update_min_ts(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t ts)
