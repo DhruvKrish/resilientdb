@@ -114,8 +114,10 @@ void WorkerThread:: process(Message *msg)
     case EXECUTE_MSG:
         {
             cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
-            txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
-            Array<uint64_t> shardsInvolved = txn_man->get_shards_involved();
+            TxnManager* txn_man_check = get_transaction_manager(msg->txn_id+1, 0);
+            Array<uint64_t> shardsInvolved = txn_man_check->get_shards_involved();
+            //cout<<"Size of shardsInvolved: "<<shardsInvolved.get_count()<<endl;
+            //if(shardsInvolved.get_count()) cout<<"First entry: "<<shardsInvolved.get(0);
             if(isRefCommittee() && !shardsInvolved.contains(0))
             {
                 rc = send_client_response(msg);
@@ -1028,19 +1030,19 @@ void WorkerThread::init_txn_man(YCSBClientQueryMessage *clqry)
 {
     txn_man->client_id = clqry->return_node;
     txn_man->client_startts = clqry->client_startts;
+    uint64_t shard_list_size = clqry->shards_involved.size();
+    //Initialize shard list with size of shard list in message
+    txn_man->init_shards_involved(shard_list_size);
+    //Copy transaction list from message to transaction in TxnManager
+    for(uint64_t i=0;i<clqry->shards_involved.size();i++){
+        txn_man->set_shards_involved(clqry->shards_involved.get(i));
+    }
     //Check if request is a cross shard transaction
     if(clqry->cross_shard_txn){
         //Set cross shard transaction bool of transaction
         txn_man->set_cross_shard_txn();
-        uint64_t shard_list_size = clqry->shards_involved.size();
-        //Initialize shard list with size of shard list in message
-        txn_man->init_shards_involved(shard_list_size);
         //Vote count expected by reference committee should be number of shards involved in the txn
         txn_man->TwoPC_Vote_cnt = shard_list_size;
-        //Copy transaction list from message to transaction in TxnManager
-        for(uint64_t i=0;i<clqry->shards_involved.size();i++){
-            txn_man->set_shards_involved(clqry->shards_involved.get(i));
-        }
     }
 
     YCSBQuery *query = (YCSBQuery *)(txn_man->query);
