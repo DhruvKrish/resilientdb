@@ -149,9 +149,13 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     txn_ready = true;
 
     prepared = false;
+    prepared2 = false;
     committed_local = false;
+    committed_local2 = false;
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    commit_rsp_cnt = prep_rsp_cnt+1;
+    prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt2 = prep_rsp_cnt2+1;
     chkpt_cnt = 2 * g_min_invalid_nodes;
 
     //Counters of 2PC messages
@@ -199,10 +203,14 @@ void TxnManager::release(uint64_t pool_id)
     txn_ready = true;
 
     hash.clear();
+    hash2.clear();
     prepared = false;
+    prepared2 = false;
 
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    commit_rsp_cnt = prep_rsp_cnt+1;
+    prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt2 = prep_rsp_cnt2+1;
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
     //Counters of 2PC messages
     TwoPC_Request_cnt=g_min_invalid_nodes+1;
@@ -292,6 +300,7 @@ txnid_t TxnManager::get_txn_id()
 void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
 {
     txn->txn_id_RC = txn_id_RC;
+    txn->batch_id = txn_id_RC;
 }
 
 txnid_t TxnManager::get_txn_id_RC()
@@ -376,15 +385,31 @@ string TxnManager::get_hash()
     return hash;
 }
 
+string TxnManager::get_hash2()
+{
+    return hash2;
+}
+
 void TxnManager::set_hash(string hsh)
 {
     hash = hsh;
     hashSize = hash.length();
 }
 
+void TxnManager::set_hash2(string hsh)
+{
+    hash2 = hsh;
+    hashSize2 = hash2.length();
+}
+
 uint64_t TxnManager::get_hashSize()
 {
     return hashSize;
+}
+
+uint64_t TxnManager::get_hashSize2()
+{
+    return hashSize2;
 }
 
 
@@ -395,6 +420,17 @@ void TxnManager::set_primarybatch(BatchRequests *breq)
 	batchreq = (BatchRequests *)deepMsg;
 	delete_msg_buffer(buf);
 }	
+
+BatchRequests* TxnManager::get_primarybatch()
+{
+    BatchRequests * brequest;
+	char *buf = create_msg_buffer(this->batchreq);
+	Message *deepMsg = deep_copy_msg(buf, this->batchreq);
+	brequest = (BatchRequests *)deepMsg;
+	delete_msg_buffer(buf);
+
+    return brequest;
+}
 
 bool TxnManager::is_chkpt_ready()
 {
@@ -439,6 +475,27 @@ uint64_t TxnManager::get_prep_rsp_cnt()
     return prep_rsp_cnt;
 }
 
+void TxnManager::set_prepared2()
+{
+    prepared2 = true;
+}
+
+bool TxnManager::is_prepared2()
+{
+    return prepared2;
+}
+
+uint64_t TxnManager::decr_prep_rsp_cnt2()
+{
+    prep_rsp_cnt2--;
+    return prep_rsp_cnt2;
+}
+
+uint64_t TxnManager::get_prep_rsp_cnt2()
+{
+    return prep_rsp_cnt2;
+}
+
 /************************************/
 
 /* Helper functions for PBFT. */
@@ -471,6 +528,37 @@ uint64_t TxnManager::decr_commit_rsp_cnt()
 uint64_t TxnManager::get_commit_rsp_cnt()
 {
     return commit_rsp_cnt;
+}
+
+
+void TxnManager::set_committed2()
+{
+    committed_local2 = true;
+}
+
+bool TxnManager::is_committed2()
+{
+    return committed_local2;
+}
+
+
+/*void TxnManager::add_commit_msg2(PBFTCommitMessage *pcmsg)
+{
+	char *buf = create_msg_buffer(pcmsg);
+	Message *deepMsg = deep_copy_msg(buf, pcmsg);
+	commit_msgs.push_back((PBFTCommitMessage *)deepMsg);
+	delete_msg_buffer(buf);
+}*/
+
+uint64_t TxnManager::decr_commit_rsp_cnt2()
+{
+    commit_rsp_cnt2--;
+    return commit_rsp_cnt2;
+}
+
+uint64_t TxnManager::get_commit_rsp_cnt2()
+{
+    return commit_rsp_cnt2;
 }
 
 /*****************************/
@@ -547,11 +635,17 @@ uint64_t TxnManager::get_2PC_Commit_cnt()
 //broadcasts prepare message to all nodes
 void TxnManager::send_pbft_prep_msgs()
 {
-    //printf("%ld Send PBFT_PREP_MSG message to %d nodes\n", get_txn_id(), g_node_cnt - 1);
-    //fflush(stdout);
+    if(is_2PC_Vote_recvd()){
+        printf("Send PBFT_PREP_MSG message txn_id: %ld to %d nodes\n", get_txn_id(), g_shard_size - 1);
+        fflush(stdout);
+    }
 
     Message *msg = Message::create_message(this, PBFT_PREP_MSG);
     PBFTPrepMessage *pmsg = (PBFTPrepMessage *)msg;
+
+    //Assign which local pbft the message is for
+    if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) pmsg->first_local_pbft = true;
+    else pmsg->first_local_pbft = false;
 
 #if LOCAL_FAULT == true || VIEW_CHANGES
     if (get_prep_rsp_cnt() > 0)
@@ -583,10 +677,14 @@ void TxnManager::send_pbft_prep_msgs()
 //broadcasts commit message to all nodes
 void TxnManager::send_pbft_commit_msgs()
 {
-    //cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
+    cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
 
     Message *msg = Message::create_message(this, PBFT_COMMIT_MSG);
     PBFTCommitMessage *cmsg = (PBFTCommitMessage *)msg;
+
+    //Assign which local pbft the message is for
+    if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) cmsg->first_local_pbft = true;
+    else cmsg->first_local_pbft = false;
 
 #if LOCAL_FAULT == true || VIEW_CHANGES
     if (get_commit_rsp_cnt() > 0)

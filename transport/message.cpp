@@ -919,6 +919,9 @@ bool ClientResponseMessage::validate()
 		clrspStore[relIndex][i] = clrsp;
 	}
 
+	cout << "Validated TXN: " << this->txn_id << " :: LT: " << get_last_valid_txn() << "\n";
+	fflush(stdout);
+
 	return true;
 }
 
@@ -1517,12 +1520,19 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
 	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 
-	// Storing the representative hash of the batch.
-	this->hash = txn->hash;
-	this->hashSize = txn->hashSize;
-	// Use these lines for testing plain hash function.
-	//string message = "anc_def";
-	//this->hash.add(calculateHash(message));
+	if(!txn->is_2PC_Vote_recvd())
+	{
+		// Storing the representative hash of the batch.
+		this->hash = txn->hash;
+		this->hashSize = txn->hashSize;
+		// Use these lines for testing plain hash function.
+		//string message = "anc_def";
+		//this->hash.add(calculateHash(message));
+	}
+	else{
+		this->hash = txn->hash2;
+		this->hashSize = txn->hashSize2;
+	}
 }
 
 void BatchRequests::release()
@@ -2019,6 +2029,7 @@ uint64_t PBFTPrepMessage::get_size()
 	size += sizeof(return_node);
 	size += sizeof(end_index);
 	size += sizeof(batch_size);
+	size += sizeof(first_local_pbft);
 
 	return size;
 }
@@ -2056,6 +2067,7 @@ void PBFTPrepMessage::copy_from_buf(char *buf)
 	COPY_VAL(return_node, buf, ptr);
 	COPY_VAL(end_index, buf, ptr);
 	COPY_VAL(batch_size, buf, ptr);
+	COPY_VAL(first_local_pbft, buf, ptr);
 
 	assert(ptr == get_size());
 }
@@ -2081,6 +2093,7 @@ void PBFTPrepMessage::copy_to_buf(char *buf)
 
 	COPY_BUF(buf, end_index, ptr);
 	COPY_BUF(buf, batch_size, ptr);
+	COPY_BUF(buf, first_local_pbft, ptr);
 
 	assert(ptr == get_size());
 }
@@ -2136,6 +2149,7 @@ uint64_t PBFTCommitMessage::get_size()
 	size += sizeof(return_node);
 	size += sizeof(end_index);
 	size += sizeof(batch_size);
+	size += sizeof(first_local_pbft);
 
 	return size;
 }
@@ -2173,6 +2187,7 @@ void PBFTCommitMessage::copy_from_buf(char *buf)
 	COPY_VAL(return_node, buf, ptr);
 	COPY_VAL(end_index, buf, ptr);
 	COPY_VAL(batch_size, buf, ptr);
+	COPY_VAL(first_local_pbft, buf, ptr);
 
 	assert(ptr == get_size());
 }
@@ -2197,6 +2212,7 @@ void PBFTCommitMessage::copy_to_buf(char *buf)
 	COPY_BUF(buf, return_node, ptr);
 	COPY_BUF(buf, end_index, ptr);
 	COPY_BUF(buf, batch_size, ptr);
+	COPY_BUF(buf, first_local_pbft, ptr);
 
 	assert(ptr == get_size());
 }

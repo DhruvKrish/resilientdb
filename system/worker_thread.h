@@ -33,12 +33,16 @@ public:
     void release_txn_man(uint64_t txn_id, uint64_t batch_id);
     void algorithm_specific_update(Message *msg, uint64_t idx);
     void create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid);
+    //Function to send BatchRequest (Pre-Prepare) after receiving Vote_2PC or Global_Commit_2PC.
+    void send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid);
     void set_txn_man_fields(BatchRequests *breq, uint64_t bid);
 
     bool validate_msg(Message *msg);
     bool checkMsg(Message *msg);
     RC process_client_batch(Message *msg);
     RC process_batch(Message *msg);
+    //For 2nd local pbft
+    RC process_batch2(Message *msg);
     void send_checkpoints(uint64_t txn_id);
     RC process_pbft_chkpt_msg(Message *msg);
 
@@ -49,6 +53,8 @@ public:
 
     void send_cross_shard_execute_msg();
     RC process_cross_shard_execute_msg(Message *msg);
+
+    RC send_client_response(Message *msg);
 
     bool isRefCommittee();
     bool isOtherShard();
@@ -74,17 +80,23 @@ public:
 
     bool prepared(PBFTPrepMessage *msg);
     RC process_pbft_prep_msg(Message *msg);
+    //For 2nd local pbft
+    bool prepared2(PBFTPrepMessage *msg);
+    RC process_pbft_prep_msg2(Message *msg);
 
     bool committed_local(PBFTCommitMessage *msg);
     RC process_pbft_commit_msg(Message *msg);
+    //For 2nd local pbft
+    bool committed_local2(PBFTCommitMessage *msg);
+    RC process_pbft_commit_msg2(Message *msg);
 
     //Methods for 2PC message processing
     RC process_request_2pc(Message *msg);
     bool check_2pc_request_recvd(Request_2PCBatch *msg);
     RC process_vote_2pc(Message *msg);
-    bool check_2pc_vote_recvd(Vote_2PC *msg);
+    bool check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man);
     RC process_global_commit_2pc(Message *msg);
-    bool check_2pc_global_commit_recvd(Global_Commit_2PC *msg);
+    bool check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnManager *txn_man);
 
 #if TESTING_ON
     void testcases(Message *msg);

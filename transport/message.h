@@ -429,6 +429,8 @@ public:
 
     uint64_t end_index;
     uint32_t batch_size;
+    //Check if first or second local PBFT for 2PC
+    bool first_local_pbft;
 };
 
 class PBFTCommitMessage : public Message
@@ -453,6 +455,7 @@ public:
 
     uint64_t end_index;
     uint64_t batch_size;
+    bool first_local_pbft;
 };
 
 /****************************************/
