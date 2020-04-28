@@ -1425,8 +1425,8 @@ bool WorkerThread::exception_msg_handling(Message *msg)
     }
 
     // Release Messages that arrive after txn completion, except obviously
-    // CL_BATCH as it is never late.
-    if (msg->rtype != CL_BATCH && msg->rtype != REQUEST_2PC)
+    // CL_BATCH and 2PC messages as they are never late.
+    if (msg->rtype != CL_BATCH && msg->rtype != REQUEST_2PC && msg->rtype != VOTE_2PC && msg->rtype != GLOBAL_COMMIT_2PC)
     {
         if (msg->rtype != PBFT_CHKPT_MSG)
         {
@@ -1714,18 +1714,10 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     cout<<"In send_batchreq_2PC for tid: "<<tid<<endl;
 
     if(msg->rtype == VOTE_2PC){
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt+1;
         txn_man->set_2PC_Request_recvd();
         txn_man->set_2PC_Vote_recvd();
     }
     else if(msg->rtype == GLOBAL_COMMIT_2PC){
-        txn_man->prepared = false;
-        txn_man->committed_local = false;
-        txn_man->prep_rsp_cnt = 2 * g_min_invalid_nodes;
-        txn_man->commit_rsp_cnt = txn_man->prep_rsp_cnt+1;
         txn_man->set_2PC_Vote_recvd();
         txn_man->set_2PC_Commit_recvd();
     }
