@@ -1037,6 +1037,8 @@ void WorkerThread::init_txn_man(YCSBClientQueryMessage *clqry)
     for(uint64_t i=0;i<clqry->shards_involved.size();i++){
         txn_man->set_shards_involved(clqry->shards_involved.get(i));
     }
+
+    txn_man->txn->cross_shard_txn = false;
     //Check if request is a cross shard transaction
     if(clqry->cross_shard_txn){
         //Set cross shard transaction bool of transaction
