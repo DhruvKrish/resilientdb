@@ -129,6 +129,7 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         txn_man->set_batch_id(batch_id);
         txn_man->set_txn_id_RC(batch_id);
         if(batch_id!=0) txn_man->set_cross_shard_txn();
+        else txn_man->txn->cross_shard_txn = false;
 
         //Set 2PC Request Received flag if txn is cross sharded.
         //We will only create a txn_man when shards receive 2PC_Request.

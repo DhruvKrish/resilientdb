@@ -224,7 +224,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         }
         else if(isRefCommittee() && g_node_id!=0 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+            cout<<"About to call send_execute_msg txn_id in process_cross_shard: "<<txn_man->get_txn_id()<<endl;
             send_execute_msg();
         }
 
@@ -370,7 +370,7 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
 	msg_queue.enqueue(get_thd_id(), gmsg, emptyvec, dest);
 	dest.clear();
 
-    cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+    cout<<"About to call send_execute_msg txn_id in send_global_commit: "<<txn_man->get_txn_id()<<endl;
     send_execute_msg();
 
     return RCOK;  
@@ -1037,6 +1037,8 @@ void WorkerThread::init_txn_man(YCSBClientQueryMessage *clqry)
     for(uint64_t i=0;i<clqry->shards_involved.size();i++){
         txn_man->set_shards_involved(clqry->shards_involved.get(i));
     }
+
+    txn_man->txn->cross_shard_txn = false;
     //Check if request is a cross shard transaction
     if(clqry->cross_shard_txn){
         //Set cross shard transaction bool of transaction

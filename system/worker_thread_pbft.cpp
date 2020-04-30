@@ -158,6 +158,7 @@ RC WorkerThread::process_batch(Message *msg)
             server_timer->endTimer(txn_man->hash);
 #endif
             // Proceed to executing this batch of transactions.
+            cout<<"About to call send_execute_msg txn_id in process_batch: "<<txn_man->get_txn_id()<<endl;
             send_execute_msg();
 
             // End the commit counter.
@@ -313,7 +314,7 @@ RC WorkerThread::process_batch2(Message *msg)
                     }
                     else
                     {
-                        cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+                        cout<<"About to call send_execute_msg txn_id in process_batch2: "<<txn_man->get_txn_id()<<endl;
                         send_execute_msg();
                     }
                 }
@@ -321,6 +322,7 @@ RC WorkerThread::process_batch2(Message *msg)
             else
             {
             // Add this message to execute thread's queue.
+                cout<<"About to call send_execute_msg txn_id in process_batch2: "<<txn_man->get_txn_id()<<endl;
                 send_execute_msg();
             }
 
@@ -660,7 +662,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
             }
             else
             {
-                cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+                cout<<"About to call send_execute_msg txn_id in process_commit1: "<<txn_man->get_txn_id()<<endl;
                 send_execute_msg();
             }
             
@@ -669,6 +671,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
     else
     {
        // Add this message to execute thread's queue.
+       cout<<"About to call send_execute_msg txn_id in process_commit1: "<<txn_man->get_txn_id()<<endl;
         send_execute_msg();  
     }
 
@@ -747,7 +750,7 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
             }
             else
             {
-                cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+                cout<<"About to call send_execute_msg in process_commit_2 txn_id: "<<txn_man->get_txn_id()<<endl;
                 send_execute_msg();
             }
             
@@ -756,6 +759,7 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
     else
     {
        // Add this message to execute thread's queue.
+       cout<<"About to call send_execute_msg txn_id in process_commit2"<<txn_man->get_txn_id()<<endl;
         send_execute_msg();  
     }
 

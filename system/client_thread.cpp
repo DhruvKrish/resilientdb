@@ -116,9 +116,12 @@ RC ClientThread::run()
 
 		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
 	uint32_t next_node_id = 0;
+	bool mixed = false;
 	
 	while (!simulation->is_done())
 	{
+		mixed = !mixed;
+
 		heartbeat();
 		progress_stats();
 		int32_t inf_cnt;
@@ -127,7 +130,8 @@ RC ClientThread::run()
 		//next_node_id = view_to_primary(get_view());
 
 		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
-		next_node_id = 0;
+		if(mixed) next_node_id = 0;
+		else next_node_id = 4;
 
 #if VIEW_CHANGES
 		//if a request by this client hasnt been completed in time
@@ -202,10 +206,12 @@ RC ClientThread::run()
 		if(addMore == g_batch_size-1 || addMore == g_batch_size-2)
 		{
 			//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
-			clqry->cross_shard_txn=true;
+			if(mixed) clqry->cross_shard_txn=true;
 			//All requests are shard transactions between shard numbers 1 and 2
-			clqry->shards_involved.init(2);
-			clqry->shards_involved.add((uint64_t)0);
+			if (mixed) clqry->shards_involved.init(2);
+			else clqry->shards_involved.init(1);
+
+			if(mixed) clqry->shards_involved.add((uint64_t)0);
 			clqry->shards_involved.add((uint64_t)1);
 		}
 
@@ -216,7 +222,7 @@ RC ClientThread::run()
 		// Resetting and sending the message
 		if (addMore == g_batch_size)
 		{
-			cout<<"addMore in client is 99. Making batch."<<endl;
+			cout<<"addMore in client is batch_size. Making batch."<<endl;
 			bmsg->sign(next_node_id); // Sign the message.
 
 #if TIMER_ON
