@@ -956,7 +956,16 @@ RC WorkerThread::run()
         // Based on the type of the message, we try acquiring the transaction manager.
         if (msg->rtype != BATCH_REQ && msg->rtype != CL_BATCH && msg->rtype != EXECUTE_MSG && msg->rtype != REQUEST_2PC)
         {
-            txn_man = get_transaction_manager(msg->txn_id, msg->get_batch_id());
+
+            if(msg->rtype == GLOBAL_COMMIT_2PC){
+                //if(batch_id_directory.exists(msg->get_batch_id())) 
+                cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<msg->get_batch_id()<<" txn_id: "
+                <<batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1<<endl;
+                txn_man = get_transaction_manager(batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1, 0);
+            }
+            else{
+                txn_man = get_transaction_manager(msg->txn_id, 0);
+            }
 
             ready_starttime = get_sys_clock();
             bool ready = txn_man->unset_ready();
@@ -1158,7 +1167,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     }
 
     // Last Transaction of the batch.
-    if(isOtherShard())txn_man = get_transaction_manager(i, msg->batch_id);
+    if(isOtherShard())txn_man = get_transaction_manager(i, 0);
     else txn_man = get_transaction_manager(i, 0);
     cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
     <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
@@ -1474,8 +1483,10 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
         for (uint64_t i = 0; i < get_batch_size(); i++)
         {
             //If Request_2PC received in shard instead of Client_Batch, create last txn_man of batch with 2PC info
-            if(i==get_batch_size()-1 && breq->rc_txn_id!=0)
+            if(i==get_batch_size()-1 && breq->rc_txn_id!=0){
                 txn_man = get_transaction_manager(breq->index[i], breq->rc_txn_id);
+                batch_id_directory.add(breq->rc_txn_id,breq->index[i]/get_batch_size());
+            }
             else 
                 txn_man = get_transaction_manager(breq->index[i], bid);
 
@@ -1506,7 +1517,9 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     }
 
     if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd){
-        txn_man = get_transaction_manager(breq->txn_id + 2, breq->batch_id);
+        if(batch_id_directory.exists(breq->get_batch_id())) cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<breq->batch_id<<" txn_id: "
+        <<batch_id_directory.get(breq->batch_id) * get_batch_size() + get_batch_size() - 1<<endl;
+        txn_man = get_transaction_manager(breq->txn_id + 2, 0);
     }
 
     // We need to unset txn_man again for last txn in the batch.
@@ -1582,6 +1595,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
         {
             Request_2PCBatch *reqmsg = (Request_2PCBatch *)msg;
             txn_man = get_transaction_manager(txn_id, reqmsg->rc_txn_id);
+            //Add mapping
+            batch_id_directory.add(reqmsg->rc_txn_id, txn_id/get_batch_size());
             //cout<<"Set txn_man txn_id: "<<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()
             //<<" 2pcRequestrecv: "<<txn_man->is_2PC_Request_recvd()<<endl;
         }

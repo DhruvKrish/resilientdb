@@ -405,4 +405,4 @@ uint64_t payload_size = 51200;
 	DataBase* db = new InMemoryDB();
 #endif
 
-
+SpinLockMap<int, int> batch_id_directory;

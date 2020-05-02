@@ -35,6 +35,7 @@
 #include "xed25519.h"
 #include "sha.h"
 #include "database.h"
+#include "hash_maps.h"
 
 using namespace std;
 
@@ -413,5 +414,8 @@ extern double output_thd_idle_time[SEND_THREAD_CNT];
 #if PAYLOAD_ENABLE
 extern uint64_t payload_size;
 #endif
+
+//To map batch_id to txn_id
+extern SpinLockMap<int, int> batch_id_directory;
 
 #endif

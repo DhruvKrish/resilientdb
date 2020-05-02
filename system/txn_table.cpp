@@ -12,7 +12,7 @@
 void TxnTable::init()
 {
     DEBUG_M("TxnTable::init pool_node alloc\n");
-    pool_size = g_batch_size;
+    pool_size = indexSize+1;
     pool = (pool_node **)mem_allocator.align_alloc(sizeof(pool_node *) * pool_size);
     for (uint32_t i = 0; i < pool_size; i++)
     {
@@ -42,11 +42,7 @@ bool TxnTable::is_matching_txn_node(txn_node_t t_node, uint64_t txn_id, uint64_t
     fflush(stdout);*/
 
     assert(t_node);
-    //This is a 2PC status check. Each batch is mapped to a batch_id that is contained in one txn_man per batch.
-    if(batch_id != 0) 
-        return (t_node->txn_man->get_batch_id() == batch_id);
-    else 
-        return (t_node->txn_man->get_txn_id() == txn_id);
+    return (t_node->txn_man->get_txn_id() == txn_id);
 }
 
 void TxnTable::update_min_ts(uint64_t thd_id, uint64_t txn_id, uint64_t batch_id, uint64_t ts)
@@ -201,6 +197,9 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
     }
     cout<<"check3"<<endl;
     assert(t_node->txn_man);
+
+    //Release batch_id from map
+    if(t_node->txn_man->get_batch_id() != 0 ) batch_id_directory.remove(t_node->txn_man->get_batch_id());
 
     cout<<"check4"<<endl;
     // Releasing the txn manager.
