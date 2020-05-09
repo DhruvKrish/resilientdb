@@ -55,9 +55,9 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     assert(ISSERVER || ISREPLICA);
     DEBUG("Work Enqueue (%ld,%ld) %d\n", entry->txn_id, entry->batch_id, entry->rtype);
 
-    if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH)
+    if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH || msg->rtype == REQUEST_2PC)
     {
-        if (g_node_id == get_current_view(thd_id))
+        if (g_node_id == is_primary_node(thd_id, g_node_id))
         {
             //cout << "Placing \n";
             while (!new_txn_queue->push(entry) && !simulation->is_done())
