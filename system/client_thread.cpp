@@ -66,6 +66,7 @@ void ClientThread::setup()
 	batchMTX.lock();
 	commonVar++;
 	batchMTX.unlock();
+	txn_batch_sent_cnt = 0;
 
 	if (_thd_id == 0)
 	{
@@ -201,12 +202,20 @@ RC ClientThread::run()
 		clqry->cross_shard_txn=false;
 		if(addMore == g_batch_size-1 || addMore == g_batch_size-2)
 		{
-			//Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
-			clqry->cross_shard_txn=true;
-			//All requests are shard transactions between shard numbers 1 and 2
-			clqry->shards_involved.init(2);
-			clqry->shards_involved.add((uint64_t)0);
-			clqry->shards_involved.add((uint64_t)1);
+			if (txn_batch_sent_cnt % 100 < CROSS_SHARD_PRECENTAGE)
+            {
+                //Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
+				clqry->cross_shard_txn=true;
+				//All requests are shard transactions with size g_shard_cnt
+				clqry->shards_involved.init(g_shard_cnt);
+                for (uint64_t i = 0; i < g_shard_cnt; i++)
+                    clqry->shards_involved.add(i);
+            }
+			else
+			{
+				clqry->shards_involved.init(1);
+				clqry->shards_involved.add((uint64_t)0);
+			}
 		}
 
 
@@ -216,7 +225,6 @@ RC ClientThread::run()
 		// Resetting and sending the message
 		if (addMore == g_batch_size)
 		{
-			cout<<"addMore in client is 99. Making batch."<<endl;
 			bmsg->sign(next_node_id); // Sign the message.
 
 #if TIMER_ON
@@ -241,6 +249,7 @@ RC ClientThread::run()
 			dest.push_back(next_node_id);
 			msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
 			dest.clear();
+			txn_batch_sent_cnt++;
 
 			num_txns_sent += g_batch_size;
 			txns_sent[next_node] += g_batch_size;

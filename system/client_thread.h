@@ -24,6 +24,7 @@ public:
 private:
     uint64_t last_send_time;
     uint64_t send_interval;
+    uint64_t txn_batch_sent_cnt;
 };
 
 #endif

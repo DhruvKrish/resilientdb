@@ -3,6 +3,8 @@
 // Specify the number of servers or replicas 
 // New constant for shard size
 #define SHARD_SIZE 4
+//Percentage of cross shard transactions
+#define CROSS_SHARD_PRECENTAGE 20
 // Make node count to 8, 4 per shard
 #define NODE_CNT 8
 // Number of worker threads at primary. For RBFT (6) and other algorithms (5). 

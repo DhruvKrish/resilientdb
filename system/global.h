@@ -381,6 +381,8 @@ void set_newView(uint64_t thd_id, bool val);
 
 // Size of the batch.
 extern uint64_t g_batch_size;
+//Number of shards
+extern uint64_t g_shard_cnt;
 uint64_t get_batch_size();
 extern uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];
 
