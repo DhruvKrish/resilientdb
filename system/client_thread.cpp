@@ -66,7 +66,7 @@ void ClientThread::setup()
 	batchMTX.lock();
 	commonVar++;
 	batchMTX.unlock();
-#if AHl
+#if AHL
 	txn_batch_sent_cnt = 0;
 #endif
 
