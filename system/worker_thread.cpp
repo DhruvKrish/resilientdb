@@ -1052,8 +1052,6 @@ void WorkerThread::init_txn_man(YCSBClientQueryMessage *clqry)
     if(clqry->cross_shard_txn){
         //Set cross shard transaction bool of transaction
         txn_man->set_cross_shard_txn();
-        //Vote count expected by reference committee should be number of shards involved in the txn
-        txn_man->TwoPC_Vote_cnt = shard_list_size;
     }
 
     YCSBQuery *query = (YCSBQuery *)(txn_man->query);
@@ -1988,26 +1986,8 @@ bool WorkerThread::prepared2(PBFTPrepMessage *msg)
 }
 
 bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
-    //cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    //fflush(stdout);
 
-    // Once 2PC_Request is set, no processing for further messages of same txn_id.
-    if (txn_man->is_2PC_Request_recvd())
-    {
-        return false;
-    }
-
-    // Decrementing 2PC_Request_cnt
-    uint64_t request_2pc_cnt = txn_man->decr_2PC_Request_cnt();
-    //cout << "Request_2PC_Count: " << request_2pc_cnt << endl;
-    //fflush(stdout);
-    if (request_2pc_cnt == 0)
-    {
-        txn_man->set_2PC_Request_recvd();
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){

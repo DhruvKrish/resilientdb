@@ -171,10 +171,6 @@ public:
     bool prepared2 = false;
     uint64_t cbatch;
 
-    //Counters of 2PC messages
-    uint64_t TwoPC_Request_cnt;
-    uint64_t TwoPC_Vote_cnt;
-    uint64_t TwoPC_Commit_cnt;
     //Flag to check if 2PC messages received
     bool TwoPC_Request_recvd;
     bool TwoPC_Vote_recvd;

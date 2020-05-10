@@ -200,7 +200,7 @@ RC ClientThread::run()
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
 		clqry->cross_shard_txn=false;
-		if(addMore == g_batch_size-1 || addMore == g_batch_size-2)
+		if(addMore == g_batch_size-1)
 		{
 			if (txn_batch_sent_cnt % 100 < CROSS_SHARD_PRECENTAGE)
             {
