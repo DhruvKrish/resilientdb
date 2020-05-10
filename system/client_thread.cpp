@@ -66,7 +66,9 @@ void ClientThread::setup()
 	batchMTX.lock();
 	commonVar++;
 	batchMTX.unlock();
+#if AHl
 	txn_batch_sent_cnt = 0;
+#endif
 
 	if (_thd_id == 0)
 	{
@@ -112,11 +114,7 @@ RC ClientThread::run()
 	ClientQueryBatch *bmsg = (ClientQueryBatch *)mssg;
 	bmsg->init();
 #endif
-	// get the primary in the current view for sharding (For intrashard transactions)
-	//uint32_t next_node_id = view_to_primary(get_view());
-
-		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
-	uint32_t next_node_id = 0;
+	uint32_t next_node_id = get_view();
 	
 	while (!simulation->is_done())
 	{
@@ -124,13 +122,8 @@ RC ClientThread::run()
 		progress_stats();
 		int32_t inf_cnt;
 		uint32_t next_node = get_view();
-		// get the primary in the current view for sharding (For intrashard transactions)
-		//next_node_id = view_to_primary(get_view());
-
-		//for Cross Shard transactions(Client only sends to Primary of Reference Committee)
-		next_node_id = 0;
-
-#if VIEW_CHANGES
+		next_node_id = get_view();
+		#if VIEW_CHANGES
 		//if a request by this client hasnt been completed in time
 		ClientQueryBatch *cbatch = NULL;
 		if (client_timer->checkTimer(cbatch))
@@ -199,6 +192,7 @@ RC ClientThread::run()
 
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
+#if AHL
 		clqry->cross_shard_txn=false;
 		if(addMore == g_batch_size-1)
 		{
@@ -217,6 +211,8 @@ RC ClientThread::run()
 				clqry->shards_involved.add((uint64_t)0);
 			}
 		}
+		next_node_id = 0;
+#endif
 
 
 		bmsg->cqrySet.add(clqry);
@@ -243,13 +239,12 @@ RC ClientThread::run()
 			emptyvec.push_back(bmsg->signature);
 
 			vector<uint64_t> dest;
-
-			//next_node_id should be the primary of the reference committee (assumed to be first shard)
-			//next_node_id = view_to_primary(get_view(),0); //Passing node 0 as it is in the first shard
 			dest.push_back(next_node_id);
 			msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
 			dest.clear();
+#if AHL
 			txn_batch_sent_cnt++;
+#endif
 
 			num_txns_sent += g_batch_size;
 			txns_sent[next_node] += g_batch_size;
