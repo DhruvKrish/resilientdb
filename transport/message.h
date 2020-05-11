@@ -157,8 +157,6 @@ public:
     uint64_t client_startts;
     uint64_t first_startts;
     Array<uint64_t> partitions;
-    //bool cross_shard_txn;
-    //Array<uint64_t> shards_involved;
 };
 
 class YCSBClientQueryMessage : public ClientQueryMessage
@@ -181,10 +179,13 @@ public:
 
     Array<ycsb_request *> requests;
 
+#if AHL
+
     //This ClientQuery Message is a cross-shard transacton if cross_shard_txn is set
     bool cross_shard_txn;
     //List of shards involved in the cross-shard transaction
     Array<uint64_t> shards_involved;
+#endif
 };
 
 class ClientResponseMessage : public Message
@@ -235,6 +236,7 @@ public:
 };
 #endif
 
+#if AHL
 class Request_2PCBatch : public ClientQueryBatch
 {
 public:
@@ -267,12 +269,7 @@ public:
             
     uint64_t rc_txn_id;
 };
-
-class Abort_2PC : public ClientQueryBatch
-{
-public:
-    //uint64_t rc_txn_id;
-};
+#endif
 
 
 class QueryMessage : public Message
@@ -329,12 +326,14 @@ public:
     uint64_t hashSize; // Representative hash for the batch.
     string hash;
     uint32_t batch_size;
+#if AHL
     //Corresponding txn_id for Reference Committee in cross sharded transactions
     uint64_t rc_txn_id;
     //Information about 2PC state of batch
     bool TwoPC_Request_recvd;
     bool TwoPC_Vote_recvd;
     bool TwoPC_Commit_recvd;
+#endif
 };
 
 class ExecuteMessage : public Message
@@ -358,6 +357,7 @@ public:
     uint64_t batch_size;
 };
 
+#if AHL
 class CrossShardExecuteMessage : public Message
 {
 public: 
@@ -378,6 +378,7 @@ public:
     uint64_t end_index;
     uint64_t batch_size;
 };
+#endif
 
 class CheckpointMessage : public Message
 {
@@ -429,8 +430,10 @@ public:
 
     uint64_t end_index;
     uint32_t batch_size;
+#if AHL
     //Check if first or second local PBFT for 2PC
     bool first_local_pbft;
+#endif
 };
 
 class PBFTCommitMessage : public Message
@@ -455,7 +458,9 @@ public:
 
     uint64_t end_index;
     uint64_t batch_size;
+#if AHL
     bool first_local_pbft;
+#endif
 };
 
 /****************************************/

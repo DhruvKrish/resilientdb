@@ -120,6 +120,7 @@ Message *Message::create_message(RemReqType rtype)
 	case BATCH_REQ:
 		msg = new BatchRequests;
 		break;
+#if AHL
 	case REQUEST_2PC:
 		msg = new Request_2PCBatch;
 		break;
@@ -129,12 +130,10 @@ Message *Message::create_message(RemReqType rtype)
 	case GLOBAL_COMMIT_2PC:
 		msg = new Global_Commit_2PC;
 		break;
-	case ABORT_2PC:
-		msg = new Abort_2PC;
-		break;
 	case CROSS_SHARD_EXECUTE:
 		msg = new CrossShardExecuteMessage;
 		break;
+#endif
 
 #if VIEW_CHANGES == true
 	case VIEW_CHANGE:
@@ -163,7 +162,10 @@ Message *Message::create_message(RemReqType rtype)
 	assert(msg);
 	msg->rtype = rtype;
 	msg->txn_id = UINT64_MAX;
+	msg->batch_id =  UINT64_MAX;
+#if AHL
 	msg->batch_id = 0;
+#endif
 	msg->return_node_id = g_node_id;
 	msg->wq_time = 0;
 	msg->mq_time = 0;
@@ -185,8 +187,10 @@ uint64_t Message::mget_size()
 	uint64_t size = 0;
 	size += sizeof(RemReqType);
 	size += sizeof(uint64_t);
+#if AHL
 	//Size for batch_id
 	size += sizeof(uint64_t);
+#endif
 
 	// for stats, send message queue time
 	size += sizeof(uint64_t);
@@ -203,7 +207,9 @@ uint64_t Message::mget_size()
 void Message::mcopy_from_txn(TxnManager *txn)
 {
 	txn_id = txn->get_txn_id();
+#if AHL
 	batch_id = txn->get_batch_id();
+#endif
 }
 
 void Message::mcopy_to_txn(TxnManager *txn)
@@ -216,7 +222,9 @@ void Message::mcopy_from_buf(char *buf)
 	uint64_t ptr = 0;
 	COPY_VAL(rtype, buf, ptr);
 	COPY_VAL(txn_id, buf, ptr);
+#if AHL
 	COPY_VAL(batch_id, buf, ptr);
+#endif
 	COPY_VAL(mq_time, buf, ptr);
 
 	COPY_VAL(lat_work_queue_time, buf, ptr);
@@ -259,7 +267,9 @@ void Message::mcopy_to_buf(char *buf)
 	uint64_t ptr = 0;
 	COPY_BUF(buf, rtype, ptr);
 	COPY_BUF(buf, txn_id, ptr);
+#if AHL
 	COPY_BUF(buf, batch_id, ptr);
+#endif
 	COPY_BUF(buf, mq_time, ptr);
 
 	COPY_BUF(buf, lat_work_queue_time, ptr);
@@ -314,8 +324,7 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
-	case CL_QRY:
-	{
+	case CL_QRY:	{
 		YCSBClientQueryMessage *m_msg = (YCSBClientQueryMessage *)msg;
 		m_msg->release();
 		delete m_msg;
@@ -328,6 +337,7 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
+#if AHL
 	case REQUEST_2PC:
 	{
 		Request_2PCBatch *m_msg = (Request_2PCBatch *)msg;
@@ -335,8 +345,7 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
-	case VOTE_2PC:
-	{
+	case VOTE_2PC:	{
 		Vote_2PC *m_msg = (Vote_2PC *)msg;
 		m_msg->release();
 		delete m_msg;
@@ -349,6 +358,23 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
+	case CROSS_SHARD_EXECUTE:
+	{
+		static int counter = 0;
+		//CrossShardExecuteMessage *m_msg = (CrossShardExecuteMessage *)msg;
+		CrossShardExecuteMessage *m_msg = dynamic_cast<CrossShardExecuteMessage*>(msg); // use dynamic cast to convert Base pointer into Derived pointer
+ 
+		try {
+			m_msg->release();
+		}
+		catch (...) {
+			cout<<"In exception:"<<endl;
+		}
+		delete m_msg;
+		counter++;
+		break;
+	}
+#endif
 	
 	case RDONE:
 	{
@@ -371,23 +397,6 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
-	case CROSS_SHARD_EXECUTE:
-	{
-		static int counter = 0;
-		//CrossShardExecuteMessage *m_msg = (CrossShardExecuteMessage *)msg;
-		CrossShardExecuteMessage *m_msg = dynamic_cast<CrossShardExecuteMessage*>(msg); // use dynamic cast to convert Base pointer into Derived pointer
- 
-		try {
-			m_msg->release();
-		}
-		catch (...) {
-			cout<<"In exception:"<<endl;
-		}
-		delete m_msg;
-		counter++;
-		break;
-	}
-
 	case BATCH_REQ:
 	{
 		BatchRequests *m_msg = (BatchRequests *)msg;
@@ -500,8 +509,10 @@ void YCSBClientQueryMessage::release()
 		}
 	}
 	requests.release();
+#if AHL
 	// Release shards
 	shards_involved.release();
+#endif
 }
 
 uint64_t YCSBClientQueryMessage::get_size()
@@ -512,10 +523,12 @@ uint64_t YCSBClientQueryMessage::get_size()
 	size += sizeof(size_t);
 	size += sizeof(ycsb_request) * requests.size();
 	size += sizeof(return_node);
+#if AHL
 	//Add shard request information to the message size
 	size += sizeof(cross_shard_txn);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * shards_involved.size();
+#endif
 
 	return size;
 }
@@ -523,16 +536,20 @@ uint64_t YCSBClientQueryMessage::get_size()
 void YCSBClientQueryMessage::copy_from_query(BaseQuery *query)
 {
 	ClientQueryMessage::copy_from_query(query);
+#if AHL
 	// Following similar implementation as ClientQueryMessage::copy_from_query
 	shards_involved.clear();
+#endif
 	requests.copy(((YCSBQuery *)(query))->requests);
 }
 
 void YCSBClientQueryMessage::copy_from_txn(TxnManager *txn)
 {
 	ClientQueryMessage::mcopy_from_txn(txn);
+#if AHL
 	// Following similar implementation as ClientQueryMessage::copy_from_query
 	shards_involved.clear();
+#endif
 	requests.copy(((YCSBQuery *)(txn->query))->requests);
 }
 
@@ -562,7 +579,7 @@ void YCSBClientQueryMessage::copy_from_buf(char *buf)
 		assert(req->key < g_synth_table_size);
 		requests.add(req);
 	}
-
+#if AHL
 	COPY_VAL(cross_shard_txn, buf, ptr);
 	size_t sizeOfShards;
 	COPY_VAL(sizeOfShards, buf, ptr);
@@ -574,6 +591,7 @@ void YCSBClientQueryMessage::copy_from_buf(char *buf)
 		COPY_VAL(shard, buf, ptr);
 		shards_involved.add(shard);
 	}
+#endif
 	COPY_VAL(return_node, buf, ptr);
 	assert(ptr == get_size());
 }
@@ -592,6 +610,7 @@ void YCSBClientQueryMessage::copy_to_buf(char *buf)
 		COPY_BUF(buf, *req, ptr);
 	}
 
+#if AHL
 	//Copy sharding related flag and array to buffer
 	COPY_BUF(buf, cross_shard_txn, ptr);
 	size_t sizeOfShards = shards_involved.size();
@@ -602,6 +621,7 @@ void YCSBClientQueryMessage::copy_to_buf(char *buf)
 		uint64_t shard = shards_involved[i];
 		COPY_BUF(buf, shard, ptr);
 	}
+#endif
 	//End of copy
 	COPY_BUF(buf, return_node, ptr);
 
@@ -652,8 +672,6 @@ uint64_t ClientQueryMessage::get_size()
 	size += sizeof(client_startts);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * partitions.size();
-	//size += sizeof(cross_shard_txn);
-	//size += sizeof(uint64_t) * shards_involved.size();
 	return size;
 }
 
@@ -836,7 +854,6 @@ void ClientResponseMessage::sign(uint64_t dest_node)
 #else
 	this->signature = "0";
 #endif
-
 	this->sigSize = this->signature.size();
 	this->keySize = this->pubKey.size();
 }
@@ -918,9 +935,6 @@ bool ClientResponseMessage::validate()
 		clrsp.txn_id = UINT64_MAX;
 		clrspStore[relIndex][i] = clrsp;
 	}
-
-	cout << "Validated TXN: " << this->txn_id << " :: LT: " << get_last_valid_txn() << "\n";
-	fflush(stdout);
 
 	return true;
 }
@@ -1189,7 +1203,7 @@ uint64_t ClientQueryBatch::get_size()
 	
 	return size;
 }
-
+#if AHL
 uint64_t Request_2PCBatch::get_size()
 {
 	uint64_t size = ClientQueryBatch::get_size();
@@ -1216,6 +1230,7 @@ uint64_t Global_Commit_2PC::get_size()
 
 	return size;
 }
+#endif
 
 
 
@@ -1225,7 +1240,6 @@ void ClientQueryBatch::init()
 	this->batch_size = get_batch_size();
 	this->cqrySet.init(get_batch_size());
 }
-
 
 void ClientQueryBatch::release()
 {
@@ -1267,6 +1281,7 @@ void ClientQueryBatch::copy_from_buf(char *buf)
 	assert(ptr == ClientQueryBatch::get_size());
 }
 
+#if AHL
 void Request_2PCBatch::copy_from_buf(char *buf)
 {
 	ClientQueryBatch::copy_from_buf(buf);
@@ -1293,6 +1308,7 @@ void Global_Commit_2PC::copy_from_buf(char *buf)
 
 	assert(ptr == get_size());
 }
+#endif
 
 void ClientQueryBatch::copy_to_buf(char *buf)
 {
@@ -1311,6 +1327,7 @@ void ClientQueryBatch::copy_to_buf(char *buf)
 	assert(ptr == ClientQueryBatch::get_size());
 }
 
+#if AHL
 void Request_2PCBatch::copy_to_buf(char *buf)
 {
 	ClientQueryBatch::copy_to_buf(buf);
@@ -1319,7 +1336,6 @@ void Request_2PCBatch::copy_to_buf(char *buf)
 	
 	assert(ptr == get_size());
 }
-
 void Vote_2PC::copy_to_buf(char *buf)
 {
 	ClientQueryBatch::copy_to_buf(buf);
@@ -1337,6 +1353,7 @@ void Global_Commit_2PC::copy_to_buf(char *buf)
 	
 	assert(ptr == get_size());
 }
+#endif
 
 string ClientQueryBatch::getString()
 {
@@ -1348,7 +1365,7 @@ string ClientQueryBatch::getString()
 
 	return message;
 }
-
+#if AHL
 string Request_2PCBatch::getString()
 {
 	string message = std::to_string(this->return_node);
@@ -1360,6 +1377,7 @@ string Request_2PCBatch::getString()
 
 	return message;
 } 
+#endif
 
 
 void ClientQueryBatch::sign(uint64_t dest_node)
@@ -1378,7 +1396,7 @@ void ClientQueryBatch::sign(uint64_t dest_node)
 	this->sigSize = this->signature.size();
 	this->keySize = this->pubKey.size();
 }
-
+#if AHL
 void Request_2PCBatch::sign(uint64_t dest_node)
 {
 this->signature = "0";
@@ -1392,6 +1410,7 @@ this->signature = "0";
 	this->sigSize = this->signature.size();
 	this->keySize = this->pubKey.size(); */
 } 
+#endif
 
 bool ClientQueryBatch::validate()
 {
@@ -1414,30 +1433,13 @@ bool ClientQueryBatch::validate()
 
 #endif // Client_Batch
 
+#if AHL
  //makes sure message is valid, returns true for false
 bool Request_2PCBatch::validate()
 {
-/*
- #if USE_CRYPTO
-	string message = this->getString();
-
-	//cout << "Sign: " << this->signature << "\n";
-	//fflush(stdout);
-
-	//cout << "Pkey: " << this->pubKey << "\n";
-	//fflush(stdout);
-
-	if (!validateNodeNode(message, this->pubKey, this->signature, this->return_node_id))
-	{
-		assert(0);
-		return false;
-	}
-
-#endif */
-
-	return true;
+return true;
 }
-
+#endif
 /**************************************************/
 
 uint64_t BatchRequests::get_size()
@@ -1456,10 +1458,12 @@ uint64_t BatchRequests::get_size()
 	}
 
 	size += sizeof(batch_size);
+#if AHL
 	size += sizeof(rc_txn_id);
 	size += sizeof(TwoPC_Request_recvd);
 	size += sizeof(TwoPC_Vote_recvd);
 	size += sizeof(TwoPC_Commit_recvd);
+#endif
 
 	return size;
 }
@@ -1468,12 +1472,17 @@ uint64_t BatchRequests::get_size()
 void BatchRequests::init(uint64_t thd_id)
 {
 	// Only primary should create this message
+#if AHL
 	// Change assert for sharding
 	assert(is_primary_node(0, g_node_id));
+#else
+	assert(get_current_view(thd_id) == g_node_id);
+#endif
 	this->view = get_current_view(thd_id);
 
 	this->index.init(get_batch_size());
 	this->requestMsg.resize(get_batch_size());
+#if AHL
 	//init rc_txn_id. Will be assigned a value only if cross shard transaction.
 	this->rc_txn_id = UINT64_MAX;
 	//batch_id is 0 by default (for non-cross sharded transactions)
@@ -1482,6 +1491,7 @@ void BatchRequests::init(uint64_t thd_id)
 	this->TwoPC_Request_recvd = false;
 	this->TwoPC_Vote_recvd = false;
 	this->TwoPC_Commit_recvd = false;
+#endif
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry)
@@ -1499,12 +1509,14 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 
 	this->requestMsg[idx] = yqry;
 	this->index.add(txnid);
+#if AHL
 	//Copy 2PC info
 	this->rc_txn_id = txn->get_txn_id_RC();
 	this->batch_id = txn->get_batch_id();
 	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
 	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
 	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
+#endif
 }
 
 void BatchRequests::copy_from_txn(TxnManager *txn)
@@ -1512,6 +1524,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	// Setting txn_id 2 less than the actual value.
 	this->txn_id = txn->get_txn_id() - 2;
 	this->batch_size = get_batch_size();
+#if AHL
 	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
 	this->rc_txn_id = txn->get_txn_id_RC();
 	this->batch_id = txn->get_batch_id();
@@ -1522,6 +1535,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 
 	if(!txn->is_2PC_Vote_recvd())
 	{
+#endif
 		// Storing the representative hash of the batch.
 		this->hash = txn->hash;
 		this->hashSize = txn->hashSize;
@@ -1529,10 +1543,12 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 		//string message = "anc_def";
 		//this->hash.add(calculateHash(message));
 	}
+#if AHL
 	else{
 		this->hash = txn->hash2;
 		this->hashSize = txn->hashSize2;
 	}
+#endif
 }
 
 void BatchRequests::release()
@@ -1577,10 +1593,12 @@ void BatchRequests::copy_from_buf(char *buf)
 	ptr = buf_to_string(buf, ptr, hash, hashSize);
 
 	COPY_VAL(batch_size, buf, ptr);
+#if AHL
 	COPY_VAL(rc_txn_id, buf, ptr);
 	COPY_VAL(TwoPC_Request_recvd, buf, ptr);
 	COPY_VAL(TwoPC_Vote_recvd, buf, ptr);
 	COPY_VAL(TwoPC_Commit_recvd, buf, ptr);
+#endif
 
 	assert(ptr == get_size());
 }
@@ -1613,10 +1631,12 @@ void BatchRequests::copy_to_buf(char *buf)
 	}
 
 	COPY_BUF(buf, batch_size, ptr);
+#if AHL
 	COPY_BUF(buf, rc_txn_id, ptr);
 	COPY_BUF(buf, TwoPC_Request_recvd, ptr);
 	COPY_BUF(buf, TwoPC_Vote_recvd, ptr);
 	COPY_BUF(buf, TwoPC_Commit_recvd, ptr);
+#endif
 
 	assert(ptr == get_size());
 }
@@ -1777,9 +1797,8 @@ void ExecuteMessage::copy_to_buf(char *buf)
 	assert(ptr == get_size());
 }
 
-
+#if AHL
 /************************************/
-
 uint64_t CrossShardExecuteMessage::get_size()
 {
 	uint64_t size = Message::mget_size();
@@ -1859,6 +1878,7 @@ void CrossShardExecuteMessage::copy_to_buf(char *buf)
 
 
 /***********************************/
+#endif
 
 uint64_t CheckpointMessage::get_size()
 {
@@ -2029,7 +2049,9 @@ uint64_t PBFTPrepMessage::get_size()
 	size += sizeof(return_node);
 	size += sizeof(end_index);
 	size += sizeof(batch_size);
+#if AHL
 	size += sizeof(first_local_pbft);
+#endif
 
 	return size;
 }
@@ -2067,7 +2089,9 @@ void PBFTPrepMessage::copy_from_buf(char *buf)
 	COPY_VAL(return_node, buf, ptr);
 	COPY_VAL(end_index, buf, ptr);
 	COPY_VAL(batch_size, buf, ptr);
+#if AHL
 	COPY_VAL(first_local_pbft, buf, ptr);
+#endif
 
 	assert(ptr == get_size());
 }
@@ -2093,7 +2117,9 @@ void PBFTPrepMessage::copy_to_buf(char *buf)
 
 	COPY_BUF(buf, end_index, ptr);
 	COPY_BUF(buf, batch_size, ptr);
+#if AHL
 	COPY_BUF(buf, first_local_pbft, ptr);
+#endif
 
 	assert(ptr == get_size());
 }
@@ -2149,7 +2175,9 @@ uint64_t PBFTCommitMessage::get_size()
 	size += sizeof(return_node);
 	size += sizeof(end_index);
 	size += sizeof(batch_size);
+#if AHL
 	size += sizeof(first_local_pbft);
+#endif
 
 	return size;
 }
@@ -2187,7 +2215,9 @@ void PBFTCommitMessage::copy_from_buf(char *buf)
 	COPY_VAL(return_node, buf, ptr);
 	COPY_VAL(end_index, buf, ptr);
 	COPY_VAL(batch_size, buf, ptr);
+#if AHL
 	COPY_VAL(first_local_pbft, buf, ptr);
+#endif 
 
 	assert(ptr == get_size());
 }
@@ -2212,7 +2242,9 @@ void PBFTCommitMessage::copy_to_buf(char *buf)
 	COPY_BUF(buf, return_node, ptr);
 	COPY_BUF(buf, end_index, ptr);
 	COPY_BUF(buf, batch_size, ptr);
+#if AHL
 	COPY_BUF(buf, first_local_pbft, ptr);
+#endif
 
 	assert(ptr == get_size());
 }
