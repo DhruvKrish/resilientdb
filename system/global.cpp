@@ -64,8 +64,10 @@ UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_core_cnt = CORE_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;
 
+#if AHL 
 // new constant for shard size
 UInt32 g_shard_size = SHARD_SIZE;
+#endif
 
 #if EXECUTION_THREAD
 UInt32 g_execute_thd = EXECUTE_THD_CNT;
@@ -145,7 +147,7 @@ CryptoPP::ed25519::Signer signer;
 uint64_t receivedKeys[NODE_CNT + CLIENT_NODE_CNT];
 
 /*********************************************/
-
+#if AHL 
 // method to check if node is primary in a shard
 bool is_primary_node(uint64_t thd_id, uint64_t node){
 
@@ -176,6 +178,7 @@ int is_in_same_shard(uint64_t first_id, uint64_t second_id)
     return (int)(first_id / g_shard_size) == (int)(second_id / g_shard_size);
 }
 /*********************************************/
+#endif
 
 // Entities for ensuring successful key exchange.
 std::mutex keyMTX;
@@ -184,7 +187,11 @@ uint64_t totKey = 0;
 
 uint64_t indexSize = 2 * g_client_node_cnt * g_inflight_max;
 //Number of invalid/faulty nodes
+#if AHL 
 uint64_t g_min_invalid_nodes = (g_shard_size - 1) / 2;
+#else
+uint64_t g_min_invalid_nodes = (g_node_cnt - 1) / 3; //min number of valid nodes
+#endif
 
 // Funtion to calculate hash of a string.
 string calculateHash(string str)
@@ -343,7 +350,9 @@ void set_newView(uint64_t thd_id, bool val)
 
 // Size of the batch
 uint64_t g_batch_size = BATCH_SIZE;
+#if AHL
 uint64_t g_shard_cnt = NODE_CNT / SHARD_SIZE;
+#endif
 uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];
 uint64_t get_batch_size()
 {
@@ -406,4 +415,6 @@ uint64_t payload_size = 51200;
 	DataBase* db = new InMemoryDB();
 #endif
 
+#if AHL
 SpinLockMap<int, int> batch_id_directory;
+#endif
