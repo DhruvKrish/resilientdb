@@ -21,12 +21,14 @@ public:
     void reset(uint64_t pool_id);
     void release(uint64_t pool_id);
     txnid_t txn_id;
+#if AHL
     //Transaction ID of the reference committee for a cross shard transaction.
     txnid_t txn_id_RC;
     //Flag to check if transacation is cross sharded
     bool cross_shard_txn;
     //List of shards involved in the transaction
     Array<uint64_t> shards_involved;
+#endif
     uint64_t batch_id;
     RC rc;
 };
@@ -101,6 +103,7 @@ public:
     Workload *get_wl();
     void set_txn_id(txnid_t txn_id);
     txnid_t get_txn_id();
+#if AHL
     //set correspoding txn_id of Reference Committee
     void set_txn_id_RC(txnid_t txn_id_RC);
     //get correspoding txn_id of Reference Committee
@@ -115,6 +118,56 @@ public:
     void set_shards_involved(uint64_t shard_number);
     //get shards_involved array
     Array<uint64_t> get_shards_involved();
+     string hash2;       // Hash of the client query for second local pbft.
+    uint64_t hashSize2; // Size of hash in second local pbft
+    string get_hash2();
+    void set_hash2(string hsh);
+    uint64_t get_hashSize2();
+    BatchRequests* get_primarybatch();
+    bool prepared2 = false;
+     //Flag to check if 2PC messages received
+    bool TwoPC_Request_recvd;
+    bool TwoPC_Vote_recvd;
+    bool TwoPC_Commit_recvd;
+
+    uint64_t decr_2PC_Request_cnt();
+    uint64_t get_2PC_Request_cnt();
+    bool is_2PC_Request_recvd();
+    void set_2PC_Request_recvd();
+
+    uint64_t decr_2PC_Vote_cnt();
+    uint64_t get_2PC_Vote_cnt();
+    bool is_2PC_Vote_recvd();
+    void set_2PC_Vote_recvd();
+
+    uint64_t decr_2PC_Commit_cnt();
+    uint64_t get_2PC_Commit_cnt();
+    bool is_2PC_Commit_recvd();
+    void set_2PC_Commit_recvd();
+
+     //Variables to handle the second local PBFT in 2PC
+    uint64_t prep_rsp_cnt2;
+    vector<uint64_t> info_prepare2;
+
+     //Variables to handle the second local PBFT in 2PC
+    uint64_t decr_prep_rsp_cnt2();
+    uint64_t get_prep_rsp_cnt2();
+    bool is_prepared2();
+    void set_prepared2();
+
+    //Variables to handle the second local PBFT in 2PC
+    uint64_t commit_rsp_cnt2;
+    bool committed_local2 = false;
+    vector<uint64_t> info_commit2;
+
+  //Variables to handle the second local PBFT in 2PC
+    uint64_t decr_commit_rsp_cnt2();
+    uint64_t get_commit_rsp_cnt2();
+    bool is_committed2();
+    void set_committed2();
+#endif
+
+
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();
@@ -135,8 +188,7 @@ public:
     void set_batch_id(uint64_t batch_id) { txn->batch_id = batch_id; }
 
     Transaction *txn;
-
-    BaseQuery *query;        // Client query.
+    BaseQuery *query; // Client query.
     uint64_t client_startts; // Client timestamp for this transaction.
     uint64_t client_id;      // Id of client that sent this transaction.
 
@@ -146,18 +198,11 @@ public:
     void set_hash(string hsh);
     uint64_t get_hashSize();
 
-    string hash2;       // Hash of the client query for second local pbft.
-    uint64_t hashSize2; // Size of hash in second local pbft
-    string get_hash2();
-    void set_hash2(string hsh);
-    uint64_t get_hashSize2();
-
-    // We need to maintain one copy of the whole BatchRequests messages sent 
+       // We need to maintain one copy of the whole BatchRequests messages sent 
     // by the primary. We only maintain in last request of the batch. 
     BatchRequests *batchreq;  
     void set_primarybatch(BatchRequests *breq);
-    BatchRequests* get_primarybatch();
-
+    
     vector<string> allsign;
 
     uint64_t get_abort_cnt() { return abort_cnt; }
@@ -168,54 +213,21 @@ public:
     void set_rc(RC rc) { txn->rc = rc; }
 
     bool prepared = false;
-    bool prepared2 = false;
     uint64_t cbatch;
-
-    //Flag to check if 2PC messages received
-    bool TwoPC_Request_recvd;
-    bool TwoPC_Vote_recvd;
-    bool TwoPC_Commit_recvd;
-
-    uint64_t decr_2PC_Request_cnt();
-    uint64_t get_2PC_Request_cnt();
-    bool is_2PC_Request_recvd();
-    void set_2PC_Request_recvd();
-
-    uint64_t decr_2PC_Vote_cnt();
-    uint64_t get_2PC_Vote_cnt();
-    bool is_2PC_Vote_recvd();
-    void set_2PC_Vote_recvd();
-
-    uint64_t decr_2PC_Commit_cnt();
-    uint64_t get_2PC_Commit_cnt();
-    bool is_2PC_Commit_recvd();
-    void set_2PC_Commit_recvd();
 
     uint64_t prep_rsp_cnt;
     vector<uint64_t> info_prepare;
-    //Variables to handle the second local PBFT in 2PC
-    uint64_t prep_rsp_cnt2;
-    vector<uint64_t> info_prepare2;
-
+   
     uint64_t decr_prep_rsp_cnt();
     uint64_t get_prep_rsp_cnt();
     bool is_prepared();
     void set_prepared();
-    //Variables to handle the second local PBFT in 2PC
-    uint64_t decr_prep_rsp_cnt2();
-    uint64_t get_prep_rsp_cnt2();
-    bool is_prepared2();
-    void set_prepared2();
-
+   
     void send_pbft_prep_msgs();
 
     uint64_t commit_rsp_cnt;
     bool committed_local = false;
     vector<uint64_t> info_commit;
-    //Variables to handle the second local PBFT in 2PC
-    uint64_t commit_rsp_cnt2;
-    bool committed_local2 = false;
-    vector<uint64_t> info_commit2;
 
     // We need to store all the complete Commit mssg in the last txn of batch.
     vector<PBFTCommitMessage *> commit_msgs; 
@@ -225,12 +237,7 @@ public:
     uint64_t get_commit_rsp_cnt();
     bool is_committed();
     void set_committed();
-    //Variables to handle the second local PBFT in 2PC
-    uint64_t decr_commit_rsp_cnt2();
-    uint64_t get_commit_rsp_cnt2();
-    bool is_committed2();
-    void set_committed2();
-
+  
     void send_pbft_commit_msgs();
 
     int chkpt_cnt;
