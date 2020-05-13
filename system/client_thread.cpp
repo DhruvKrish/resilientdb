@@ -198,6 +198,8 @@ RC ClientThread::run()
 		{
 			if (txn_batch_sent_cnt % 100 < CROSS_SHARD_PRECENTAGE)
             {
+				//If cross shard, send to primary of first shard
+				next_node_id = view_to_primary(get_view(),0);
                 //Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
 				clqry->cross_shard_txn=true;
 				//All requests are shard transactions with size g_shard_cnt
@@ -207,11 +209,12 @@ RC ClientThread::run()
             }
 			else
 			{
+				//Send to primary of shard assigned to this client
+				next_node_id = view_to_primary(get_view(),get_shard_number(g_node_id)*g_shard_size);
 				clqry->shards_involved.init(1);
-				clqry->shards_involved.add((uint64_t)0);
+				clqry->shards_involved.add(get_shard_number(g_node_id));
 			}
 		}
-		next_node_id = 0;
 #endif
 
 
