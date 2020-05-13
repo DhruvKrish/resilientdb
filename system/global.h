@@ -170,8 +170,11 @@ extern DataBase *db;
 extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
+#if AHL
+
 // variable for shard size
 extern UInt32 g_shard_size;
+#endif
 
 enum RC
 {
@@ -206,14 +209,17 @@ enum RemReqType
     NEW_VIEW,
 #endif
 
-    PBFT_PREP_MSG,   // Prepare
-    PBFT_COMMIT_MSG, // Commit
-    PBFT_CHKPT_MSG,  // Checkpoint and Garbage Collection
+#if AHL   
     REQUEST_2PC,  //Request message for 2PC (sent by Primary during AHL)
     VOTE_2PC,       // Vote for 2PC, sent by replicas of other shard
     GLOBAL_COMMIT_2PC,     // Commit by Reference Committee for 2PC
     ABORT_2PC,       // Abort by Reference Committee for 2PC
-    CROSS_SHARD_EXECUTE
+    CROSS_SHARD_EXECUTE,
+#endif
+    PBFT_PREP_MSG,   // Prepare
+    PBFT_COMMIT_MSG, // Commit
+    PBFT_CHKPT_MSG // Checkpoint and Garbage Collection
+
 };
 
 /* Thread */
@@ -302,7 +308,7 @@ struct KeyPairHex
     std::string privateKey;
 };
 
-
+#if AHL 
 /*********************************************/
 // new methods for sharding
 uint64_t get_shard_number(uint64_t i = g_node_id);
@@ -311,6 +317,7 @@ int is_in_same_shard(uint64_t first_id,uint64_t second_id);
 bool is_primary_node(uint64_t thd_id, uint64_t node = g_node_id);
 // end of new methods 
 /*********************************************/
+#endif
 
 extern std::mutex keyMTX;
 extern bool keyAvail;
@@ -384,8 +391,10 @@ void set_newView(uint64_t thd_id, bool val);
 
 // Size of the batch.
 extern uint64_t g_batch_size;
+#if AHL 
 //Number of shards
 extern uint64_t g_shard_cnt;
+#endif
 uint64_t get_batch_size();
 extern uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];
 
@@ -420,7 +429,11 @@ extern double output_thd_idle_time[SEND_THREAD_CNT];
 extern uint64_t payload_size;
 #endif
 
+#if AHL 
+
 //To map batch_id to txn_id
 extern SpinLockMap<int, int> batch_id_directory;
+
+#endif
 
 #endif
