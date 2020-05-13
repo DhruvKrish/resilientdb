@@ -25,8 +25,13 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
 
     if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH || msg->rtype == REQUEST_2PC)
     {
+#if AHL
         if (g_node_id == is_primary_node(thd_id, g_node_id))
         {
+#else
+        if (g_node_id == get_current_view(thd_id))
+        {
+#endif
             while (!new_txn_queue->push(entry) && !simulation->is_done())
             {
             }

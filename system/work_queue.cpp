@@ -57,8 +57,14 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
 
     if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH || msg->rtype == REQUEST_2PC)
     {
+#if AHL
         if (g_node_id == is_primary_node(thd_id, g_node_id))
         {
+#else
+if (g_node_id == get_current_view(thd_id))
+        {
+#endif
+
             //cout << "Placing \n";
             while (!new_txn_queue->push(entry) && !simulation->is_done())
             {
@@ -85,7 +91,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     }
     else if (msg->rtype == EXECUTE_MSG)
     {
-        cout<<"In enqueue EXECUTE_MSG txn_id: "<<msg->txn_id<<endl;
+        //cout<<"In enqueue EXECUTE_MSG txn_id: "<<msg->txn_id<<endl;
         uint64_t bid = ((msg->txn_id + 2) - get_batch_size()) / get_batch_size();
         uint64_t qid = bid % indexSize;
         while (!work_queue[qid + 1]->push(entry) && !simulation->is_done())
