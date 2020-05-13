@@ -225,7 +225,7 @@ RC InputThread::client_recv_loop()
                 // End the timer.
                 client_timer->endTimer(clrsp->client_ts[get_batch_size() - 1]);
 #endif
-                //cout << "validated: " << clrsp->txn_id << "\n";
+                //cout << "validated: " << clrsp->txn_id <<" return node id: "<<clrsp->return_node_id<< "\n";
                 //fflush(stdout);
 
 #if VIEW_CHANGES

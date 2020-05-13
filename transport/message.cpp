@@ -875,12 +875,30 @@ bool ClientResponseMessage::validate()
 	//cout << "IN: " << this->txn_id << " :: " << this->return_node_id << "\n";
 	//fflush(stdout);
 
+#if AHL
+	//If client response not from reference committee or assigned shard
+	if(this->return_node_id>=g_shard_size && get_shard_number(this->return_node_id)!=get_shard_number(g_node_id))
+	{
+		return false;
+	}
+	//Check last txn received from assigned shard
+	if(get_shard_number(this->return_node_id)==get_shard_number(g_node_id) && this->txn_id <= get_last_valid_txn())
+	{
+		return false;
+	}
+	//Check last txn received from reference committee
+	if(this->return_node_id<g_shard_size && this->txn_id <= get_last_valid_txn_ref_committee())
+	{
+		return false;
+	}
+#else
 	if (this->txn_id <= get_last_valid_txn())
 	{
 		//cout << "TXN: " << this->txn_id << " :: LT: " << get_last_valid_txn() << "\n";
 		//fflush(stdout);
 		return false;
 	}
+#endif
 
 	uint64_t k = 0;
 	uint64_t relIndex = this->txn_id % indexSize;
@@ -904,7 +922,9 @@ bool ClientResponseMessage::validate()
 					fflush(stdout);
 					assert(false);
 				}
+#if !AHL
 				assert(this->client_ts[j] == clrsp.client_ts[j]);
+#endif
 			}
 #else
 			assert(this->client_startts == clrsp.client_startts);
@@ -926,8 +946,14 @@ bool ClientResponseMessage::validate()
 		return false;
 	}
 
+#if AHL
+	//Set last_txn of either assigned shard or reference committee base on return_node_id
+	if(this->return_node_id<g_shard_size) set_last_valid_txn_ref_committee(this->txn_id);
+	else if(get_shard_number(this->return_node_id)==get_shard_number(g_node_id)) set_last_valid_txn(this->txn_id);
+#else
 	// If true, set this as the next transaction completed.
 	set_last_valid_txn(this->txn_id);
+#endif
 
 	for (uint64_t i = 0; i < g_node_cnt; i++)
 	{

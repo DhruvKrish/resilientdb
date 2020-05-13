@@ -100,6 +100,8 @@ UInt32 g_client_send_thread_cnt = CLIENT_SEND_THREAD_CNT;
 UInt32 g_servers_per_client = 0;
 UInt32 g_clients_per_server = 0;
 uint64_t last_valid_txn = 0;
+//Keep count of the last txn from the reference committee
+uint64_t last_valid_txn_ref_committee = 0;
 uint64_t get_last_valid_txn()
 {
 	return last_valid_txn;
@@ -108,6 +110,16 @@ uint64_t get_last_valid_txn()
 void set_last_valid_txn(uint64_t txn_id)
 {
 	last_valid_txn = txn_id;
+}
+
+uint64_t get_last_valid_txn_ref_committee()
+{
+	return last_valid_txn_ref_committee;
+}
+
+void set_last_valid_txn_ref_committee(uint64_t txn_id)
+{
+	last_valid_txn_ref_committee = txn_id;
 }
 
 UInt32 g_server_start_node = 0;
@@ -156,14 +168,16 @@ bool is_primary_node(uint64_t thd_id, uint64_t node){
 
 //method to get shard number
 uint64_t get_shard_number(uint64_t i){
+	//If i is client node
 	if (i >= g_node_cnt && i < g_node_cnt + g_client_node_cnt)
     {
         int client_number = g_node_id - g_node_cnt;
-        return (client_number % g_shard_size);
+        return (client_number % (g_node_cnt/g_shard_size));
     }
+	//If i is replica
     else
     {
-        return (g_node_id / g_shard_size);
+        return (i / g_shard_size);
     }
 }
 

@@ -97,6 +97,9 @@ extern UInt32 g_server_start_node;
 extern uint64_t last_valid_txn;
 uint64_t get_last_valid_txn();
 void set_last_valid_txn(uint64_t txn_id);
+//Second set of txn checks, for the reference committee (in case of cross shard txns in AHL)
+uint64_t get_last_valid_txn_ref_committee();
+void set_last_valid_txn_ref_committee(uint64_t txn_id);
 
 /******************************************/
 // Global Parameter
