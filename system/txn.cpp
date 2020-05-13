@@ -111,8 +111,7 @@ void Transaction::init()
 {
     txn_id = UINT64_MAX;
     batch_id = UINT64_MAX;
-
-#if AHl
+#if AHL
     txn_id_RC = UINT64_MAX;
     cross_shard_txn=false;
 #endif
@@ -137,11 +136,13 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
         DEBUG_M("Transaction alloc\n");
         txn_pool.get(pool_id, txn);
     }
+
     if (!query)
     {
         DEBUG_M("TxnManager::init Query alloc\n");
         qry_pool.get(pool_id, query);
     }
+
     sem_init(&rsp_mutex, 0, 1);
     return_id = UINT64_MAX;
 
@@ -150,13 +151,16 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     txn_ready = true;
 
     prepared = false;
+  
     committed_local = false;
+    
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    
     chkpt_cnt = 2 * g_min_invalid_nodes;
 #if AHL
     prepared2 = false;
     committed_local2 = false;
+    commit_rsp_cnt = prep_rsp_cnt+1;
     prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
     commit_rsp_cnt2 = prep_rsp_cnt2+1;
     //2PC messages received should be false initially
@@ -190,27 +194,29 @@ void TxnManager::release(uint64_t pool_id)
 {
 
     uint64_t tid = get_txn_id();
+
     qry_pool.put(pool_id, query);
     query = NULL;
-    txn_pool.put(pool_id, txn); 
+    txn_pool.put(pool_id, txn);
+#if AHL
+    //Release shard list array if transaction was cross sharded
+    if(get_cross_shard_txn())txn->shards_involved.release();
+#endif
     txn = NULL;
 
     txn_ready = true;
 
     hash.clear();
     prepared = false;
-   
     prep_rsp_cnt = 2 * g_min_invalid_nodes;
-    commit_rsp_cnt = prep_rsp_cnt + 1;
+    commit_rsp_cnt = prep_rsp_cnt+1;
+    
+    chkpt_cnt = 2 * g_min_invalid_nodes + 1;
 #if AHL
-//Release shard list array if transaction was cross sharded
-    if(get_cross_shard_txn())txn->shards_involved.release();
-     hash2.clear();
+    hash2.clear();
     prepared2 = false;
-
     prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
     commit_rsp_cnt2 = prep_rsp_cnt2+1;
-    chkpt_cnt = 2 * g_min_invalid_nodes + 1;
     //2PC messages received should be false initially
     TwoPC_Request_recvd=false;
     TwoPC_Vote_recvd=false;
@@ -247,7 +253,12 @@ int TxnManager::received_response(RC rc)
     assert(txn->rc == RCOK);
     if (txn->rc == RCOK)
         txn->rc = rc;
-
+#if AHL
+    hash2.clear();
+    prepared2 = false;
+    prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
+    commit_rsp_cnt2 = prep_rsp_cnt2+1;
+#endif
     --rsp_cnt;
 
     return rsp_cnt;
@@ -292,6 +303,45 @@ txnid_t TxnManager::get_txn_id()
 {
     return txn->txn_id;
 }
+
+#if AHL
+
+void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
+{
+    txn->txn_id_RC = txn_id_RC;
+    txn->batch_id = txn_id_RC;
+}
+
+txnid_t TxnManager::get_txn_id_RC()
+{
+    return txn->txn_id_RC;
+}
+
+//set cross_shard_txn flag
+void TxnManager::set_cross_shard_txn(){
+    txn->cross_shard_txn=true;
+}
+
+//check if cross_shard_txn flag is set
+bool TxnManager::get_cross_shard_txn(){
+    return txn->cross_shard_txn;
+}
+
+//Initialize list of shards involved in the transaction with a capacity
+void TxnManager::init_shards_involved(uint64_t capacity){
+    txn->shards_involved.init(capacity);
+}
+
+//Add a shard to the list of shards involved in the transaction
+void TxnManager::set_shards_involved(uint64_t shard_number){
+    txn->shards_involved.add(shard_number);
+}
+
+Array<uint64_t> TxnManager::get_shards_involved(){
+    return txn->shards_involved;
+}
+
+#endif
 
 Workload *TxnManager::get_wl()
 {
@@ -345,17 +395,34 @@ string TxnManager::get_hash()
 {
     return hash;
 }
-
+#if AHL
+string TxnManager::get_hash2()
+{
+    return hash2;
+}
+#endif
 void TxnManager::set_hash(string hsh)
 {
     hash = hsh;
     hashSize = hash.length();
 }
-
+#if AHL
+void TxnManager::set_hash2(string hsh)
+{
+    hash2 = hsh;
+    hashSize2 = hash2.length();
+}
+#endif
 uint64_t TxnManager::get_hashSize()
 {
     return hashSize;
 }
+#if AHL
+uint64_t TxnManager::get_hashSize2()
+{
+    return hashSize2;
+}
+#endif
 
 void TxnManager::set_primarybatch(BatchRequests *breq) 
 {
@@ -364,7 +431,18 @@ void TxnManager::set_primarybatch(BatchRequests *breq)
 	batchreq = (BatchRequests *)deepMsg;
 	delete_msg_buffer(buf);
 }	
+#if AHL
+BatchRequests* TxnManager::get_primarybatch()
+{
+    BatchRequests * brequest;
+	char *buf = create_msg_buffer(this->batchreq);
+	Message *deepMsg = deep_copy_msg(buf, this->batchreq);
+	brequest = (BatchRequests *)deepMsg;
+	delete_msg_buffer(buf);
 
+    return brequest;
+}
+#endif
 bool TxnManager::is_chkpt_ready()
 {
     return chkpt_flag;
@@ -407,7 +485,28 @@ uint64_t TxnManager::get_prep_rsp_cnt()
 {
     return prep_rsp_cnt;
 }
+#if AHL
+void TxnManager::set_prepared2()
+{
+    prepared2 = true;
+}
 
+bool TxnManager::is_prepared2()
+{
+    return prepared2;
+}
+
+uint64_t TxnManager::decr_prep_rsp_cnt2()
+{
+    prep_rsp_cnt2--;
+    return prep_rsp_cnt2;
+}
+
+uint64_t TxnManager::get_prep_rsp_cnt2()
+{
+    return prep_rsp_cnt2;
+}
+#endif
 /************************************/
 
 /* Helper functions for PBFT. */
@@ -441,92 +540,7 @@ uint64_t TxnManager::get_commit_rsp_cnt()
     return commit_rsp_cnt;
 }
 
-#if AHl
-void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
-{
-    txn->txn_id_RC = txn_id_RC;
-    txn->batch_id = txn_id_RC;
-}
-
-txnid_t TxnManager::get_txn_id_RC()
-{
-    return txn->txn_id_RC;
-}
-
-//set cross_shard_txn flag
-void TxnManager::set_cross_shard_txn(){
-    txn->cross_shard_txn=true;
-}
-
-//check if cross_shard_txn flag is set
-bool TxnManager::get_cross_shard_txn(){
-    return txn->cross_shard_txn;
-}
-
-//Initialize list of shards involved in the transaction with a capacity
-void TxnManager::init_shards_involved(uint64_t capacity){
-    txn->shards_involved.init(capacity);
-}
-
-//Add a shard to the list of shards involved in the transaction
-void TxnManager::set_shards_involved(uint64_t shard_number){
-    txn->shards_involved.add(shard_number);
-}
-
-Array<uint64_t> TxnManager::get_shards_involved(){
-    return txn->shards_involved;
-}
-
-string TxnManager::get_hash2()
-{
-    return hash2;
-}
-
-void TxnManager::set_hash2(string hsh)
-{
-    hash2 = hsh;
-    hashSize2 = hash2.length();
-}
-
-uint64_t TxnManager::get_hashSize2()
-{
-    return hashSize2;
-}
-
-BatchRequests* TxnManager::get_primarybatch()
-{
-    BatchRequests * brequest;
-	char *buf = create_msg_buffer(this->batchreq);
-	Message *deepMsg = deep_copy_msg(buf, this->batchreq);
-	brequest = (BatchRequests *)deepMsg;
-	delete_msg_buffer(buf);
-
-    return brequest;
-}
-
-void TxnManager::set_prepared2()
-{
-    prepared2 = true;
-}
-
-bool TxnManager::is_prepared2()
-{
-    return prepared2;
-}
-
-uint64_t TxnManager::decr_prep_rsp_cnt2()
-{
-    prep_rsp_cnt2--;
-    return prep_rsp_cnt2;
-}
-
-uint64_t TxnManager::get_prep_rsp_cnt2()
-{
-    return prep_rsp_cnt2;
-}
-
-
-
+#if AHL
 void TxnManager::set_committed2()
 {
     committed_local2 = true;
@@ -593,20 +607,18 @@ bool TxnManager::is_2PC_Commit_recvd()
     return TwoPC_Commit_recvd;
 }
 #endif
-
 /*****************************/
 
 //broadcasts prepare message to all nodes
 void TxnManager::send_pbft_prep_msgs()
 {
-    /* if(is_2PC_Vote_recvd()){
+    /* f(is_2PC_Vote_recvd()){
         printf("Send PBFT_PREP_MSG message txn_id: %ld to %d nodes\n", get_txn_id(), g_shard_size - 1);
         fflush(stdout);
-    } */
-
+    }
+ */
     Message *msg = Message::create_message(this, PBFT_PREP_MSG);
     PBFTPrepMessage *pmsg = (PBFTPrepMessage *)msg;
-
 #if AHL
     //Assign which local pbft the message is for
     if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) pmsg->first_local_pbft = true;
@@ -701,7 +713,7 @@ void TxnManager::release_all_messages(uint64_t txn_id)
 	Message::release_message(batchreq);
 
 	PBFTCommitMessage *cmsg;
-	while(commit_msgs.size() > 0)
+	while(commit_msgs.size()>0)
 	{
 		cmsg = (PBFTCommitMessage *)this->commit_msgs[0];
 		commit_msgs.erase(commit_msgs.begin());
