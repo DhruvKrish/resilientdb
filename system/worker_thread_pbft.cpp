@@ -669,8 +669,9 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
                 send_execute_msg();
             }
             
-        }       
-    }
+        }    
+    }   
+    
     else
     {
        // Add this message to execute thread's queue.
@@ -678,13 +679,14 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
     }
 
         INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
-    }
+    
 #else
   // Add this message to execute thread's queue.
         send_execute_msg();
 
         INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
 #endif
+}
     return RCOK;
 }
 

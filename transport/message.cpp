@@ -1568,8 +1568,9 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 		// Use these lines for testing plain hash function.
 		//string message = "anc_def";
 		//this->hash.add(calculateHash(message));
-	}
 #if AHL
+	}
+
 	else{
 		this->hash = txn->hash2;
 		this->hashSize = txn->hashSize2;

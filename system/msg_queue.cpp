@@ -87,6 +87,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
             entry->allsign.push_back(((PBFTCommitMessage *)msg)->signature);
         }
         break;
+#if AHL
     case REQUEST_2PC:
         for (uint64_t i = 0; i < dest.size(); i++)
         {
@@ -109,7 +110,8 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
             entry->allsign.push_back(msg->signature);
         } 
         //cout<<"Enqueue case done"<<endl;
-        break;      
+        break;  
+#endif    
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:
@@ -157,9 +159,11 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_CHKPT_MSG:
     case PBFT_PREP_MSG:
     case PBFT_COMMIT_MSG:
+#if AHL
     case REQUEST_2PC:
     case VOTE_2PC:
     case GLOBAL_COMMIT_2PC:
+#endif
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:

@@ -1180,12 +1180,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
     }
 
     // Last Transaction of the batch.
-#if AHL
-    if(isOtherShard())txn_man = get_transaction_manager(i, 0);
-    else txn_man = get_transaction_manager(i, 0);
-#else
     txn_man = get_transaction_manager(i, 0);
-#endif 
     while (true)
     {
         bool ready = txn_man->unset_ready();
@@ -1410,12 +1405,7 @@ RC WorkerThread::process_pbft_chkpt_msg(Message *msg)
     // Release Txn Managers.
     for (uint64_t i = get_last_deleted_txn(); i < del_range; i++)
     {
-#if AHL
-        if(i%g_batch_size==g_batch_size-1 && isOtherShard()) release_txn_man(i, 0);
-        else release_txn_man(i, 0);
-#else
         release_txn_man(i, 0);
-#endif
         inc_last_deleted_txn();
 
 #if ENABLE_CHAIN
@@ -1526,8 +1516,9 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
             bool ready = txn_man->set_ready();
             assert(ready);
         }
-    }
 #if AHL
+    }
+    
     if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd){
         if(batch_id_directory.exists(breq->get_batch_id())) cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<breq->batch_id<<" txn_id: "
         <<batch_id_directory.get(breq->batch_id) * get_batch_size() + get_batch_size() - 1<<endl;

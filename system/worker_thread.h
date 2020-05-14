@@ -19,7 +19,6 @@ public:
     RC create_and_send_PREPARE_2PC(Message *msg);
     RC create_and_send_Vote_2PC(Message *msg);
     RC create_and_send_global_commit(Message *msg);
-    void init_txn_man(YCSBClientQueryMessage *msg);
     //Function to send BatchRequest (Pre-Prepare) after receiving Vote_2PC or Global_Commit_2PC.
     void send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid);
      //For 2nd local pbft
@@ -63,6 +62,7 @@ public:
     RC process_batch(Message *msg);
     void send_checkpoints(uint64_t txn_id);
     RC process_pbft_chkpt_msg(Message *msg);
+    void init_txn_man(YCSBClientQueryMessage *msg);
 #if EXECUTION_THREAD
     void send_execute_msg();
     RC process_execute_msg(Message *msg);
