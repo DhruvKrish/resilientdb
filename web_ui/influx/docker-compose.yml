@@ -1,0 +1,22 @@
+influxdb:
+  image: influxdb:latest
+  container_name: influxdb
+  ports:
+    - "8086:8086"
+  env_file:
+    - 'env.influxdb'
+  volumes:
+    # Data persistency
+    # sudo mkdir -p /srv/docker/influxdb/data
+    - ./data/influx:/var/lib/influxdb
+chrono:
+  image: chronograf:latest
+  container_name: chrono
+  ports:
+    - "8888:8888"
+  env_file:
+    - 'env.chrono'
+  links:
+    - influxdb
+  volumes:
+    - ./data/chrono:/var/lib/chronograf

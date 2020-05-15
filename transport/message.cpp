@@ -62,6 +62,7 @@ Message *Message::create_message(TxnManager *txn, RemReqType rtype)
 	return msg;
 }
 
+#if !BANKING_SMART_CONTRACT
 Message *Message::create_message(BaseQuery *query, RemReqType rtype)
 {
 	assert(rtype == CL_QRY);
@@ -69,6 +70,7 @@ Message *Message::create_message(BaseQuery *query, RemReqType rtype)
 	((YCSBClientQueryMessage *)msg)->copy_from_query(query);
 	return msg;
 }
+#endif
 
 Message *Message::create_message(uint64_t txn_id, RemReqType rtype)
 {
@@ -99,12 +101,18 @@ Message *Message::create_message(RemReqType rtype)
 	case READY:
 		msg = new ReadyServer;
 		break;
+		#if BANKING_SMART_CONTRACT
+	case BSC_MSG:
+		msg = new BankingSmartContractMessage;
+		break;
+#else
 	case CL_QRY:
 	case RTXN:
 	case RTXN_CONT:
 		msg = new YCSBClientQueryMessage;
 		msg->init();
 		break;
+#endif
 	case CL_BATCH:
 		msg = new ClientQueryBatch;
 		break;
@@ -324,12 +332,23 @@ void Message::release_message(Message *msg)
 		delete m_msg;
 		break;
 	}
-	case CL_QRY:	{
+#if BANKING_SMART_CONTRACT
+	case BSC_MSG:
+	{
+		BankingSmartContractMessage *m_msg = (BankingSmartContractMessage *)msg;
+		m_msg->release();
+		delete m_msg;
+		break;
+	}
+#else
+	case CL_QRY:
+	{
 		YCSBClientQueryMessage *m_msg = (YCSBClientQueryMessage *)msg;
 		m_msg->release();
 		delete m_msg;
 		break;
 	}
+#endif
 	case CL_BATCH:
 	{
 		ClientQueryBatch *m_msg = (ClientQueryBatch *)msg;
@@ -484,7 +503,106 @@ void QueryMessage::copy_to_buf(char *buf)
 }
 
 /************************/
+#if BANKING_SMART_CONTRACT
+void BankingSmartContractMessage::init()
+{
+}
 
+BankingSmartContractMessage::BankingSmartContractMessage() {}
+
+BankingSmartContractMessage::~BankingSmartContractMessage()
+{
+	release();
+}
+
+void BankingSmartContractMessage::release()
+{
+	ClientQueryMessage::release();
+	inputs.release();
+}
+
+uint64_t BankingSmartContractMessage::get_size()
+{
+	uint64_t size = 0;
+	size += sizeof(RemReqType);
+	size += sizeof(return_node_id);
+	size += sizeof(client_startts);
+	size += sizeof(size_t);
+	size += sizeof(uint64_t) * inputs.size();
+	size += sizeof(BSCType);
+
+	return size;
+}
+
+void BankingSmartContractMessage::copy_from_query(BaseQuery *query) {}
+
+void BankingSmartContractMessage::copy_from_txn(TxnManager *txn) {}
+
+void BankingSmartContractMessage::copy_to_txn(TxnManager *txn) {}
+
+void BankingSmartContractMessage::copy_from_buf(char *buf)
+{
+	uint64_t ptr = 0;
+	COPY_VAL(rtype, buf, ptr);
+	COPY_VAL(return_node_id, buf, ptr);
+	COPY_VAL(client_startts, buf, ptr);
+	size_t size;
+	COPY_VAL(size, buf, ptr);
+	inputs.init(size);
+	for (uint64_t i = 0; i < size; i++)
+	{
+		uint64_t input;
+		COPY_VAL(input, buf, ptr);
+		inputs.add(input);
+	}
+
+	COPY_VAL(type, buf, ptr);
+
+	assert(ptr == get_size());
+}
+
+void BankingSmartContractMessage::copy_to_buf(char *buf)
+{
+	uint64_t ptr = 0;
+	COPY_BUF(buf, rtype, ptr);
+	COPY_BUF(buf, return_node_id, ptr);
+	COPY_BUF(buf, client_startts, ptr);
+	size_t size = inputs.size();
+	COPY_BUF(buf, size, ptr);
+	for (uint64_t i = 0; i < inputs.size(); i++)
+	{
+		uint64_t input = inputs[i];
+		COPY_BUF(buf, input, ptr);
+	}
+
+	COPY_BUF(buf, type, ptr);
+
+	assert(ptr == get_size());
+}
+
+//returns a string representation of the requests in this message
+string BankingSmartContractMessage::getRequestString()
+{
+	string message;
+	for (uint64_t i = 0; i < inputs.size(); i++)
+	{
+		message += std::to_string(inputs[i]);
+		message += " ";
+	}
+
+	return message;
+}
+
+//returns the string that needs to be signed/verified for this message
+string BankingSmartContractMessage::getString()
+{
+	string message = this->getRequestString();
+	message += " ";
+	message += to_string(this->client_startts);
+
+	return message;
+}
+#else
 void YCSBClientQueryMessage::init()
 {
 }
@@ -652,6 +770,84 @@ string YCSBClientQueryMessage::getString()
 
 	return message;
 }
+
+/************************/
+
+void YCSBQueryMessage::init()
+{
+}
+
+void YCSBQueryMessage::release()
+{
+	QueryMessage::release();
+	// Freeing requests is the responsibility of txn
+	/*
+  for(uint64_t i = 0; i < requests.size(); i++) {
+    DEBUG_M("YCSBQueryMessage::release ycsb_request free\n");
+    mem_allocator.free(requests[i],sizeof(ycsb_request));
+  }
+*/
+	requests.release();
+}
+
+uint64_t YCSBQueryMessage::get_size()
+{
+	uint64_t size = QueryMessage::get_size();
+	size += sizeof(size_t);
+	size += sizeof(ycsb_request) * requests.size();
+	return size;
+}
+
+void YCSBQueryMessage::copy_from_txn(TxnManager *txn)
+{
+	QueryMessage::copy_from_txn(txn);
+	requests.init(g_req_per_query);
+	//requests.copy(((YCSBQuery*)(txn->query))->requests);
+}
+
+void YCSBQueryMessage::copy_to_txn(TxnManager *txn)
+{
+	QueryMessage::copy_to_txn(txn);
+	//((YCSBQuery*)(txn->query))->requests.copy(requests);
+	((YCSBQuery *)(txn->query))->requests.append(requests);
+}
+
+void YCSBQueryMessage::copy_from_buf(char *buf)
+{
+	QueryMessage::copy_from_buf(buf);
+	uint64_t ptr = QueryMessage::get_size();
+	size_t size;
+	COPY_VAL(size, buf, ptr);
+	assert(size <= g_req_per_query);
+	requests.init(size);
+	for (uint64_t i = 0; i < size; i++)
+	{
+		DEBUG_M("YCSBQueryMessage::copy ycsb_request alloc\n");
+		ycsb_request *req = (ycsb_request *)mem_allocator.alloc(sizeof(ycsb_request));
+		COPY_VAL(*req, buf, ptr);
+		ASSERT(req->key < g_synth_table_size);
+		requests.add(req);
+	}
+	assert(ptr == get_size());
+}
+
+void YCSBQueryMessage::copy_to_buf(char *buf)
+{
+	QueryMessage::copy_to_buf(buf);
+	uint64_t ptr = QueryMessage::get_size();
+	size_t size = requests.size();
+	COPY_BUF(buf, size, ptr);
+	for (uint64_t i = 0; i < requests.size(); i++)
+	{
+		ycsb_request *req = requests[i];
+		COPY_BUF(buf, *req, ptr);
+	}
+	assert(ptr == get_size());
+}
+
+/****************************************/
+
+#endif
 
 /************************/
 
@@ -1137,82 +1333,6 @@ void KeyExchange::copy_to_buf(char *buf)
 	COPY_BUF(buf, return_node, ptr);
 }
 
-/************************/
-
-void YCSBQueryMessage::init()
-{
-}
-
-void YCSBQueryMessage::release()
-{
-	QueryMessage::release();
-	// Freeing requests is the responsibility of txn
-	/*
-  for(uint64_t i = 0; i < requests.size(); i++) {
-    DEBUG_M("YCSBQueryMessage::release ycsb_request free\n");
-    mem_allocator.free(requests[i],sizeof(ycsb_request));
-  }
-*/
-	requests.release();
-}
-
-uint64_t YCSBQueryMessage::get_size()
-{
-	uint64_t size = QueryMessage::get_size();
-	size += sizeof(size_t);
-	size += sizeof(ycsb_request) * requests.size();
-	return size;
-}
-
-void YCSBQueryMessage::copy_from_txn(TxnManager *txn)
-{
-	QueryMessage::copy_from_txn(txn);
-	requests.init(g_req_per_query);
-	//requests.copy(((YCSBQuery*)(txn->query))->requests);
-}
-
-void YCSBQueryMessage::copy_to_txn(TxnManager *txn)
-{
-	QueryMessage::copy_to_txn(txn);
-	//((YCSBQuery*)(txn->query))->requests.copy(requests);
-	((YCSBQuery *)(txn->query))->requests.append(requests);
-}
-
-void YCSBQueryMessage::copy_from_buf(char *buf)
-{
-	QueryMessage::copy_from_buf(buf);
-	uint64_t ptr = QueryMessage::get_size();
-	size_t size;
-	COPY_VAL(size, buf, ptr);
-	assert(size <= g_req_per_query);
-	requests.init(size);
-	for (uint64_t i = 0; i < size; i++)
-	{
-		DEBUG_M("YCSBQueryMessage::copy ycsb_request alloc\n");
-		ycsb_request *req = (ycsb_request *)mem_allocator.alloc(sizeof(ycsb_request));
-		COPY_VAL(*req, buf, ptr);
-		ASSERT(req->key < g_synth_table_size);
-		requests.add(req);
-	}
-	assert(ptr == get_size());
-}
-
-void YCSBQueryMessage::copy_to_buf(char *buf)
-{
-	QueryMessage::copy_to_buf(buf);
-	uint64_t ptr = QueryMessage::get_size();
-	size_t size = requests.size();
-	COPY_BUF(buf, size, ptr);
-	for (uint64_t i = 0; i < requests.size(); i++)
-	{
-		ycsb_request *req = requests[i];
-		COPY_BUF(buf, *req, ptr);
-	}
-	assert(ptr == get_size());
-}
-
-/****************************************/
-
 #if CLIENT_BATCH
 
 uint64_t ClientQueryBatch::get_size()
@@ -1300,7 +1420,11 @@ void ClientQueryBatch::copy_from_buf(char *buf)
 	{
 		Message *msg = create_message(&buf[ptr]);
 		ptr += msg->get_size();
+#if BANKING_SMART_CONTRACT
+		cqrySet.add((BankingSmartContractMessage *)msg);
+#else
 		cqrySet.add((YCSBClientQueryMessage *)msg);
+#endif
 	}
 
 	
@@ -1519,7 +1643,24 @@ void BatchRequests::init(uint64_t thd_id)
 	this->TwoPC_Commit_recvd = false;
 #endif
 }
+#if BANKING_SMART_CONTRACT
+void BatchRequests::copy_from_txn(TxnManager *txn, BankingSmartContractMessage *clqry)
+{
+	// Index of the transaction in this bacth.
+	uint64_t txnid = txn->get_txn_id();
+	uint64_t idx = txnid % get_batch_size();
 
+	// TODO: Some memory is getting consumed while storing client query.
+	char *bfr = (char *)malloc(clqry->get_size() + 1);
+	clqry->copy_to_buf(bfr);
+	Message *tmsg = Message::create_message(bfr);
+	BankingSmartContractMessage *yqry = (BankingSmartContractMessage *)tmsg;
+	free(bfr);
+
+	this->requestMsg[idx] = yqry;
+	this->index.add(txnid);
+}
+#else
 void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry)
 {
 	// Index of the transaction in this bacth.
@@ -1544,7 +1685,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();
 #endif
 }
-
+#endif
 void BatchRequests::copy_from_txn(TxnManager *txn)
 {
 	// Setting txn_id 2 less than the actual value.
@@ -1613,7 +1754,11 @@ void BatchRequests::copy_from_buf(char *buf)
 
 		Message *msg = create_message(&buf[ptr]);
 		ptr += msg->get_size();
+#if BANKING_SMART_CONTRACT
+		requestMsg[i] = (BankingSmartContractMessage *)msg;
+#else
 		requestMsg[i] = (YCSBClientQueryMessage *)msg;
+#endif
 	}
 
 	COPY_VAL(hashSize, buf, ptr);

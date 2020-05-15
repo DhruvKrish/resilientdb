@@ -1794,7 +1794,6 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
     Message *bmsg = Message::create_message(BATCH_REQ);
     BatchRequests *breq = (BatchRequests *)bmsg;
     /*breq->init(get_thd_id());
-
     for (uint64_t i = 0; i < get_batch_size(); i++)
     {
         char *bfr = (char *)malloc(msg->cqrySet[i]->get_size() + 1);
@@ -1802,7 +1801,6 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         Message *tmsg = Message::create_message(bfr);
         YCSBClientQueryMessage *yqry = (YCSBClientQueryMessage *)tmsg;
         free(bfr);
-
         // Setting up data for BatchRequests Message.
         breq->requestMsg[i] = yqry;
         breq->index.add(tid-get_batch_size()+1+i);
