@@ -447,3 +447,5 @@ enum BSCType
     BSC_WITHDRAW = 2,
 };
 #endif
+
+#endif
