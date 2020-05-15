@@ -206,7 +206,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
         } */
     //if current node is reference committee, phase -> Cross shard transaction received from client, removed && is_primary_node(get_thd_id(),g_node_id)
-        if(isRefCommittee() && is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+        if(isRefCommittee()&& is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
@@ -1589,8 +1589,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     {
         uint64_t txn_id = get_next_txn_id() + i;
 
-        cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
-        fflush(stdout);
+        // cout << "Txn: " << txn_id << " :: Thd: " << get_thd_id() << "\n";
+        // fflush(stdout);
 
         //If Request_2PC received instead of Client_Batch, create last txn_man of batch with 2PC info
         if(i == get_batch_size()-1 && msg->rtype == REQUEST_2PC)

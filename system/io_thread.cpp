@@ -128,7 +128,7 @@ void InputThread::setup()
                             msgs->erase(msgs->begin());
                             continue;
                         } */
-                        // msg->txn_id = get_and_inc_next_idx();
+                        msg->txn_id = get_and_inc_next_idx();
                         //cout<<"2PC Request in input thread setup txn_id: "<<msg->txn_id<<" from node:"<<msg->return_node_id<<endl;
                         //fflush(stdout);
                     }

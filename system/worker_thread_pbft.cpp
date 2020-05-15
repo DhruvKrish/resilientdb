@@ -770,9 +770,9 @@ RC WorkerThread::process_request_2pc(Message *msg)
     printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
     cout << "RS place 1" << endl;
     fflush(stdout);
-    msg->return_node_id = 0;
-    cout << "RS: return node id changed to " << msg->return_node_id << endl;
-    fflush(stdout);
+    // msg->return_node_id = 0;
+    // cout << "RS: return node id changed to " << msg->return_node_id << endl;
+    // fflush(stdout);
     create_and_send_batchreq(req2PC, req2PC->txn_id);
     return RCOK;
 }
