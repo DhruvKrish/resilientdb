@@ -636,7 +636,7 @@ uint64_t TxnManager::get_2PC_Commit_cnt()
 void TxnManager::send_pbft_prep_msgs()
 {
     if(is_2PC_Vote_recvd()){
-        printf("Send PBFT_PREP_MSG message txn_id: %ld to %d nodes\n", get_txn_id(), g_shard_size - 1);
+        // printf("Send PBFT_PREP_MSG message txn_id: %ld to %d nodes\n", get_txn_id(), g_shard_size - 1);
         fflush(stdout);
     }
 
@@ -677,7 +677,7 @@ void TxnManager::send_pbft_prep_msgs()
 //broadcasts commit message to all nodes
 void TxnManager::send_pbft_commit_msgs()
 {
-    cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
+    // cout << "Send PBFT_COMMIT_MSG messages " << get_txn_id() <<" rc_txn_id "<< get_txn_id_RC() <<"\n";
 
     Message *msg = Message::create_message(this, PBFT_COMMIT_MSG);
     PBFTCommitMessage *cmsg = (PBFTCommitMessage *)msg;

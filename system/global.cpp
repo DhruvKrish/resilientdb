@@ -266,10 +266,24 @@ std::mutex batchMTX;
 uint commonVar = 0;
 
 // Variable used by Input thread at the primary to linearize batches.
+std::mutex nextIdxMTX;
 uint64_t next_idx = 0;
 uint64_t get_and_inc_next_idx()
 {
+	nextIdxMTX.lock();
 	uint64_t val = next_idx++;
+	nextIdxMTX.unlock();
+	return val;
+}
+
+// Variable used by Input thread at the primary of other shards to linearize batches.
+std::mutex nextIdxMTX2;
+uint64_t next_idx2 = 0;
+uint64_t get_and_inc_next_idx2()
+{
+	nextIdxMTX2.lock();
+	uint64_t val = next_idx2++;
+	nextIdxMTX2.unlock();
 	return val;
 }
 
@@ -406,3 +420,7 @@ uint64_t payload_size = 51200;
 #endif
 
 SpinLockMap<int, int> batch_id_directory;
+SpinLockMap<uint64_t, int> count_2PC_request;
+SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
+SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+SpinLockMap<uint64_t, int> count_2PC_global_commit;

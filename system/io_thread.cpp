@@ -111,7 +111,24 @@ void InputThread::setup()
                     }
                     if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
                     {
-                        msg->txn_id = get_and_inc_next_idx();
+                        cout << "RS Simulation for msg->batch_id" << msg->batch_id << endl;
+                        fflush(stdout);
+                        /* if(check_2pc_request_recvd(msg)) {
+                            cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
+                            fflush(stdout);
+                            msg->txn_id = get_and_inc_next_idx();
+                            cout << " to " << msg->txn_id << endl;
+                            cout << "Adding to the queue: " << msg->batch_id << endl;
+                            fflush(stdout);
+                            cout << "Get thd id " << get_thd_id() << endl;
+                            work_queue.enqueue(get_thd_id(), msg, false);
+                            msgs->erase(msgs->begin());
+                            continue;
+                        } else {
+                            msgs->erase(msgs->begin());
+                            continue;
+                        } */
+                        // msg->txn_id = get_and_inc_next_idx();
                         //cout<<"2PC Request in input thread setup txn_id: "<<msg->txn_id<<" from node:"<<msg->return_node_id<<endl;
                         //fflush(stdout);
                     }
@@ -185,7 +202,6 @@ RC InputThread::client_recv_loop()
         while (!msgs->empty())
         {
             Message *msg = msgs->front();
-
             // Initial message processing, prior to actual consensus.
             if (msg->rtype == KEYEX)
             {
@@ -349,6 +365,10 @@ RC InputThread::server_recv_loop()
         while (!msgs->empty())
         {
             Message *msg = msgs->front();
+            // cout << "Message type is " << msg->rtype << endl;
+            // cout << "TXN ID " << msg->txn_id << endl;
+            // cout << "Batch ID " << msg->batch_id << endl;
+            // fflush(stdout);
             if (msg->rtype == INIT_DONE)
             {
                 msgs->erase(msgs->begin());
@@ -362,11 +382,42 @@ RC InputThread::server_recv_loop()
             }
             if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
             {
+                /* if(count_2PC_request.exists(msg->batch_id) && count_2PC_request.get(msg->batch_id) == 0) {
+                    msgs->erase(msgs->begin());
+                    continue;
+                }
+                else  */
+                /* if(check_2pc_request_recvd(msg)) {
+                    cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
+                    fflush(stdout);
+                    msg->txn_id = get_and_inc_next_idx2();
+                    cout << " to " << msg->txn_id << endl;
+                    cout << "Adding to the queue: " << msg->batch_id << endl;
+                    fflush(stdout);
+                    cout << "RS Count: Get thd id " << get_thd_id() << endl;
+                    work_queue.enqueue(get_thd_id(), msg, false);
+                    msgs->erase(msgs->begin());
+                    continue;
+                } else {
+                    cout << "Erasing message " << msg->batch_id << " now" << endl;
+                    fflush(stdout);
+                    msgs->erase(msgs->begin());
+                    continue;
+                } */
                 msg->txn_id = get_and_inc_next_idx();
-                //cout<<"2PC Request in input thread server receive txn_id: "<<msg->txn_id<<"from node:"<<msg->return_node_id<<endl;
-                //fflush(stdout);
-            }
 
+            }  else if(msg->rtype == REQUEST_2PC && !is_primary_node(get_thd_id(), g_node_id)) {
+                cout << "RS: Node is : " << g_node_id << endl;
+                cout << "RS: Else part to not enqueue message " << msg->batch_id << endl;
+                fflush(stdout);
+                msgs->erase(msgs->begin());
+                continue;
+            }
+            // for every other msg except Request2PC
+            if(msg->rtype == REQUEST_2PC) {
+                cout << "RS IF:Get thd id " << get_thd_id() << endl;
+                fflush(stdout);
+            }
             work_queue.enqueue(get_thd_id(), msg, false);
             msgs->erase(msgs->begin());
         }
@@ -422,4 +473,40 @@ RC OutputThread::run()
     printf("Output %ld: %f\n", _thd_id, output_thd_idle_time[_thd_id % g_send_thread_cnt] / BILLION);
     fflush(stdout);
     return FINISH;
+}
+
+bool InputThread::check_2pc_request_recvd(Message *msg){
+    cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
+    cout << "RS: batch_id: " << msg->batch_id << endl;
+    fflush(stdout);
+
+    // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
+    if (!count_2PC_request.exists(msg->batch_id)) {
+        cout << "RS: Request: Setting count to: " << g_min_invalid_nodes << endl;
+        fflush(stdout);
+        count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
+        // important to return false here, fixed seg fault
+        return false;
+    } else if (count_2PC_request.get(msg->batch_id) > 0) {
+        int curr_count = count_2PC_request.get(msg->batch_id);
+        cout << "RS: Request: Decrementing count from: " << curr_count;
+        fflush(stdout);
+
+        // Decrement count by 1
+        curr_count--;
+        count_2PC_request.add(msg->batch_id, curr_count);
+        cout << " To: " << curr_count << endl;
+        fflush(stdout);
+        // important to return false here, fixed seg fault
+        return false;
+    }
+
+    // If count becomes 0, then erase RC_TXN_ID from the table and return true
+    if ((count_2PC_request.exists(msg->batch_id)) && (count_2PC_request.get(msg->batch_id) == 0)) {
+        cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
+        fflush(stdout);
+        count_2PC_request.remove(msg->batch_id);
+        return true;
+    }
+    return false;
 }

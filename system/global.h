@@ -349,9 +349,13 @@ extern std::mutex batchMTX;
 extern uint commonVar;
 
 // Variable used by Input thread at the primary to linearize batches.
+extern std::mutex nextIdxMTX;
 extern uint64_t next_idx;
 uint64_t get_and_inc_next_idx();
 void set_next_idx(uint64_t val);
+extern std::mutex nextIdxMTX2;
+extern uint64_t next_idx2;
+uint64_t get_and_inc_next_idx2();
 
 // Counters for input threads to access next socket (only used by replicas).
 extern uint64_t sock_ctr[REM_THREAD_CNT];
@@ -417,5 +421,9 @@ extern uint64_t payload_size;
 
 //To map batch_id to txn_id
 extern SpinLockMap<int, int> batch_id_directory;
+extern SpinLockMap<uint64_t, int> count_2PC_request;
+extern SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
+extern SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+extern SpinLockMap<uint64_t, int> count_2PC_global_commit;
 
 #endif

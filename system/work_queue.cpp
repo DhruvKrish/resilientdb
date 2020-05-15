@@ -55,17 +55,22 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     assert(ISSERVER || ISREPLICA);
     DEBUG("Work Enqueue (%ld,%ld) %d\n", entry->txn_id, entry->batch_id, entry->rtype);
 
-    if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH)
+    if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH || msg->rtype == REQUEST_2PC)
     {
-        if (g_node_id == get_current_view(thd_id))
+        if (g_node_id == view_to_primary(get_current_view(thd_id), g_node_id))
         {
-            //cout << "Placing \n";
+            cout << "Work Queue Inside if" << " g_node_id " << g_node_id << endl;
+            cout << "Get current view " << view_to_primary(get_current_view(thd_id), g_node_id) << endl;
+            fflush(stdout);
             while (!new_txn_queue->push(entry) && !simulation->is_done())
             {
             }
         }
         else
         {
+            cout << "Work Queue Inside else " << " g_node_id " << g_node_id << endl;
+            cout << "Get current view " << get_current_view(thd_id) << endl;
+            fflush(stdout);
             assert(entry->rtype < 100);
             while (!work_queue[0]->push(entry) && !simulation->is_done())
             {
@@ -76,7 +81,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     {
         // Queue for Thread for ordered sending of batches.
         assert(entry->rtype < 100);
-        if (g_node_id != get_current_view(thd_id))
+        if (g_node_id != view_to_primary(get_current_view(thd_id), g_node_id))
         {
             while (!work_queue[0]->push(entry) && !simulation->is_done())
             {
@@ -85,7 +90,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     }
     else if (msg->rtype == EXECUTE_MSG)
     {
-        cout<<"In enqueue EXECUTE_MSG txn_id: "<<msg->txn_id<<endl;
+        // cout<<"In enqueue EXECUTE_MSG txn_id: "<<msg->txn_id<<endl;
         uint64_t bid = ((msg->txn_id + 2) - get_batch_size()) / get_batch_size();
         uint64_t qid = bid % indexSize;
         while (!work_queue[qid + 1]->push(entry) && !simulation->is_done())

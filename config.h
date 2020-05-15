@@ -13,7 +13,7 @@
 #define PART_CNT 1 
 // Specify the number of clients. 
 // Make client count to 2. 1 per shard
-#define CLIENT_NODE_CNT 4
+#define CLIENT_NODE_CNT 2
 #define CLIENT_THREAD_CNT 2 
 #define CLIENT_REM_THREAD_CNT 1 
 #define CLIENT_SEND_THREAD_CNT 1 
