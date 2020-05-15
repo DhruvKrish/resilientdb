@@ -1,0 +1,22 @@
+{
+  "name": "resilientdb_dashboard_backend",
+  "version": "1.0.0",
+  "description": "Backend for ResilientDB Panel",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/sajjadrahnama/resdb_dashboard_back.git"
+  },
+  "author": "Sajjad Rahnama (sajjad.rahnama7@gmail.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/sajjadrahnama/resdb_dashboard_back/issues"
+  },
+  "homepage": "https://gitlab.com/sajjadrahnama/resdb_dashboard_back#README",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}

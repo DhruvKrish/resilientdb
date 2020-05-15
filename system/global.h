@@ -208,6 +208,9 @@ enum RemReqType
     VIEW_CHANGE,
     NEW_VIEW,
 #endif
+#if BANKING_SMART_CONTRACT
+    BSC_MSG,
+#endif
 
   
     REQUEST_2PC,  //Request message for 2PC (sent by Primary during AHL)
@@ -436,4 +439,11 @@ extern SpinLockMap<int, int> batch_id_directory;
 
 #endif
 
+#if BANKING_SMART_CONTRACT
+enum BSCType
+{
+    BSC_TRANSFER = 0,
+    BSC_DEPOSIT = 1,
+    BSC_WITHDRAW = 2,
+};
 #endif

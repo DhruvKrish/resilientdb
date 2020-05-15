@@ -62,7 +62,11 @@ public:
     RC process_batch(Message *msg);
     void send_checkpoints(uint64_t txn_id);
     RC process_pbft_chkpt_msg(Message *msg);
+#if BANKING_SMART_CONTRACT
+    void init_txn_man(BankingSmartContractMessage *bscm);
+#else
     void init_txn_man(YCSBClientQueryMessage *msg);
+#endif
 #if EXECUTION_THREAD
     void send_execute_msg();
     RC process_execute_msg(Message *msg);
