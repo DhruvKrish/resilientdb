@@ -124,7 +124,7 @@ public:
     string get_hash2();
     void set_hash2(string hsh);
     uint64_t get_hashSize2();
-    BatchRequests* get_primarybatch();
+    
     bool prepared2 = false;
      //Flag to check if 2PC messages received
     bool TwoPC_Request_recvd;
@@ -168,7 +168,8 @@ public:
     void set_committed2();
 #endif
 
-
+    BatchRequests* get_primarybatch();
+    
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();

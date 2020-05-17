@@ -97,7 +97,6 @@ void WorkerThread::process(Message *msg)
         rc = process_client_batch(msg);
         break;
     case BATCH_REQ:
-    cout<<"Received batchreq"<<endl;
 #if AHL
         {
             BatchRequests *breq_check = (BatchRequests *)msg;
@@ -120,7 +119,6 @@ void WorkerThread::process(Message *msg)
         break;
 #endif
     case EXECUTE_MSG:
-     cout<<"Received Execute"<<endl;
 #if AHL
         {
             cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
@@ -150,7 +148,6 @@ void WorkerThread::process(Message *msg)
         break;
 #endif
     case PBFT_PREP_MSG:
-    cout<<"Received PBFT prep"<<endl;
 #if AHL
         {
             PBFTPrepMessage *pmsg_check = (PBFTPrepMessage *)msg;
@@ -162,7 +159,6 @@ void WorkerThread::process(Message *msg)
 #endif
         break;
     case PBFT_COMMIT_MSG:
-     cout<<"Received PBFT Commit"<<endl;
 #if AHL
         {
             PBFTCommitMessage *pcmsg_check = (PBFTCommitMessage *)msg;
@@ -1966,8 +1962,8 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
         if (!checkMsg(msg))
         {
             // If message did not match.
-            cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
-            cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
+            //cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
+            //cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
             fflush(stdout);
             return false;
         }
