@@ -381,13 +381,8 @@ RC InputThread::server_recv_loop()
                 INC_STATS(_thd_id, msg_cl_in, 1);
             }
             if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
-            {
-                /* if(count_2PC_request.exists(msg->batch_id) && count_2PC_request.get(msg->batch_id) == 0) {
-                    msgs->erase(msgs->begin());
-                    continue;
-                }
-                else  */
-                /* if(check_2pc_request_recvd(msg)) {
+            { 
+                 if(check_2pc_request_recvd(msg)) {
                     cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
                     fflush(stdout);
                     msg->txn_id = get_and_inc_next_idx2();
@@ -403,8 +398,8 @@ RC InputThread::server_recv_loop()
                     fflush(stdout);
                     msgs->erase(msgs->begin());
                     continue;
-                } */
-                msg->txn_id = get_and_inc_next_idx();
+                } 
+                //msg->txn_id = get_and_inc_next_idx();
 
             }  else if(msg->rtype == REQUEST_2PC && !is_primary_node(get_thd_id(), g_node_id)) {
                 cout << "RS: Node is : " << g_node_id << endl;

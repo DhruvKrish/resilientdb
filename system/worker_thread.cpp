@@ -206,7 +206,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
         } */
     //if current node is reference committee, phase -> Cross shard transaction received from client, removed && is_primary_node(get_thd_id(),g_node_id)
-        if(isRefCommittee()&& is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+        if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
@@ -314,7 +314,7 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
             dest.push_back(i);           
         }
 
-    printf("Sending Vote: ");             
+    cout<<"Sending vote batch_id: "<<txn_man->get_batch_id()<<endl;         
         
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), vmsg, emptyvec, dest);
@@ -1224,7 +1224,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     // End the execute counter.
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
-    // cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
+     cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
     return RCOK;
 }
 
@@ -1599,6 +1599,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
             txn_man = get_transaction_manager(txn_id, reqmsg->rc_txn_id);
             //Add mapping
             batch_id_directory.add(reqmsg->rc_txn_id, txn_id/get_batch_size());
+            cout<<"Adding batch_id to txn_id mapping batch_id: "<<reqmsg->rc_txn_id<<" txn_id: "
+            <<batch_id_directory.get(reqmsg->rc_txn_id) * get_batch_size() + get_batch_size() - 1<<endl;
             cout<<"Set txn_man txn_id: "<<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()
             <<" 2pcRequestrecv: "<<txn_man->is_2PC_Request_recvd()<<endl;
         }
