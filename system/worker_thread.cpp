@@ -113,7 +113,7 @@ void WorkerThread:: process(Message *msg)
         break;
     case EXECUTE_MSG:
         {
-            // cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
+            cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
             TxnManager* txn_man_check = get_transaction_manager(msg->txn_id+1, 0);
             Array<uint64_t> shardsInvolved = txn_man_check->get_shards_involved();
             //cout<<"Size of shardsInvolved: "<<shardsInvolved.get_count()<<endl;
@@ -206,7 +206,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
             cout<<"2pc req flag set"<<txn_man->TwoPC_Request_recvd<<endl;
         } */
     //if current node is reference committee, phase -> Cross shard transaction received from client, removed && is_primary_node(get_thd_id(),g_node_id)
-        if(isRefCommittee()&& is_primary_node(get_thd_id(),g_node_id) && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+        if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
         {
            //create and send PREPARE_2PC_REQ message to the shards involved
            create_and_send_PREPARE_2PC(msg);
@@ -1169,8 +1169,8 @@ RC WorkerThread::process_execute_msg(Message *msg)
     // Last Transaction of the batch.
     if(isOtherShard())txn_man = get_transaction_manager(i, 0);
     else txn_man = get_transaction_manager(i, 0);
-    // cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
-    // <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
+    cout<<" [PH] Received Execute message and in process_execute_msg of last txn_id: "<<txn_man->get_txn_id()
+    <<" 2pc request received: "<<txn_man->is_2PC_Request_recvd()<<endl;
 
 
     while (true)
@@ -1216,15 +1216,15 @@ RC WorkerThread::process_execute_msg(Message *msg)
 
     // Check and Send checkpoint messages.
     send_checkpoints(txn_man->get_txn_id());
-    // cout<<"Successful execute1: txn_id: "<<txn_man->get_txn_id()<<endl;
+    cout<<"Successful execute1: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // Setting the next expected prepare message id.
     set_expectedExecuteCount(get_batch_size() + msg->txn_id);
-    // cout<<"Successful execute2: txn_id: "<<txn_man->get_txn_id()<<endl;
+    cout<<"Successful execute2: txn_id: "<<txn_man->get_txn_id()<<endl;
 
     // End the execute counter.
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
-    // cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
+    cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
     return RCOK;
 }
 
@@ -1239,7 +1239,7 @@ RC WorkerThread::process_execute_msg(Message *msg)
  * @param msg Execute message that notifies execution of a batch.
  * @ret RC
  */
-RC WorkerThread:: send_client_response(Message *msg)
+RC WorkerThread::send_client_response(Message *msg)
 {
     cout << "CLIENT RESPONSE EXECUTE " << msg->txn_id << " :: " << get_thd_id() <<"\n";
     //fflush(stdout);
@@ -1602,9 +1602,8 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
             cout<<"Set txn_man txn_id: "<<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()
             <<" 2pcRequestrecv: "<<txn_man->is_2PC_Request_recvd()<<endl;
         }
-        else {
+        else
             txn_man = get_transaction_manager(txn_id, 0);
-        }
 
         // Unset this txn man so that no other thread can concurrently use.
         while (true)
@@ -1688,11 +1687,11 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 
     breq->copy_from_txn(txn_man);
     //Check 2PC info in batch
-    if(msg->rtype == REQUEST_2PC){
+    /* if(msg->rtype == REQUEST_2PC){
         cout<<"In create_and_send_batchreq. Batch txn_id: "<<breq->txn_id
         <<" rc_txn_id: "<<breq->rc_txn_id<<" batch_id: "<<breq->batch_id
         <<" 2pcRequestRecvd: "<<breq->TwoPC_Request_recvd<<endl;
-    }
+    } */
 
     // Storing the BatchRequests message.
     txn_man->set_primarybatch(breq);
@@ -1991,46 +1990,53 @@ bool WorkerThread::prepared2(PBFTPrepMessage *msg)
     return false;
 }
 
-bool WorkerThread::check_2pc_request_recvd(Request_2PCBatch *msg){
-    cout << "Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    cout << "RC_TXN_ID: " << msg->rc_txn_id << endl;
+bool WorkerThread::check_2pc_request_recvd(Message *msg){
+    request_2pc.lock();
+    cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
+    cout << "RS: batch_id: " << msg->batch_id << endl;
     fflush(stdout);
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
-    if(!count_2PC_request.exists(msg->rc_txn_id)) {
-        cout << "Request: Setting count to: " << g_min_invalid_nodes << endl;
+    if (!count_2PC_request.exists(msg->batch_id)) {
+        cout << "RS: Request: Setting count to: " << g_min_invalid_nodes << endl;
         fflush(stdout);
-        count_2PC_request.add(msg->rc_txn_id, g_min_invalid_nodes);
+
+        count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
+        request_2pc.unlock();
         return false;
-    }
-    // important to have else if not 0, otherwise count "could" go negative
-    else if(count_2PC_request.get(msg->rc_txn_id) > 0){
-        int curr_count = count_2PC_request.get(msg->rc_txn_id);
-        cout << "Request: Decrementing count from: " << curr_count << endl;
+    } else if (count_2PC_request.get(msg->batch_id) > 0) {
+        int curr_count = count_2PC_request.get(msg->batch_id);
+
+        cout << "RS: Request: Decrementing count from: " << curr_count;
         fflush(stdout);
 
         // Decrement count by 1
         curr_count--;
-        count_2PC_request.add(msg->rc_txn_id, curr_count);
+        count_2PC_request.add(msg->batch_id, curr_count);
+
         cout << " To: " << curr_count << endl;
         fflush(stdout);
         // important to return false here, fixed seg fault
+        request_2pc.unlock();
         return false;
     }
 
     // If count becomes 0, then erase RC_TXN_ID from the table and return true
-    if(count_2PC_request.exists(msg->rc_txn_id) && count_2PC_request.get(msg->rc_txn_id) == 0) {
-        cout << "Received Request f + 1 for "<< msg->rc_txn_id << endl;
+    if ((count_2PC_request.exists(msg->batch_id)) && (count_2PC_request.get(msg->batch_id) == 0)) {
+        cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
         fflush(stdout);
-        count_2PC_request.remove(msg->rc_txn_id);
+        count_2PC_request.remove(msg->batch_id);
+        request_2pc.unlock();
         return true;
     }
+    request_2pc.unlock();
     return false;
 }
 
 bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
     // return true;
+    vote_2pc.lock();
     cout << "RS: Inside check_2pc_vote_recvd for txn: " << msg->txn_id << "\n";
     fflush(stdout);
     int total_shards = (int)(g_node_cnt / g_shard_size);
@@ -2040,15 +2046,18 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
         cout << "RS: Inside setting shard size: " << total_shards << endl;
         cout << "RS: return node id: " << msg->return_node_id << endl;
         fflush(stdout);
+
         vector<int> shards_count(total_shards, g_min_invalid_nodes);
         count_2PC_vote.add(msg->txn_id, shards_count);
         count_2PC_vote_per_shard.add(msg->txn_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
+        vote_2pc.unlock();
         return false;
     } else {
         int shard_no = (int)(msg->return_node_id / g_shard_size);
         cout << "RS: shard no is " << shard_no << endl;
         fflush(stdout);
+
         vector<int> curr_count = count_2PC_vote.get(msg->txn_id);
         if (curr_count[shard_no] > 0) {
             cout << "RS: For shard no " << shard_no << " count for " << msg->txn_id << " is " << curr_count[shard_no] << endl;
@@ -2057,36 +2066,42 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
             curr_count[shard_no]--;
 
             cout << "RS: Decrement to " << curr_count[shard_no] << endl;
-            cout << "RS: Adding " << curr_count[shard_no] << " for shard no" << shard_no << " for msg id " << msg->txn_id << endl;
+            cout << "RS: Adding " << curr_count[shard_no] << " for shard no " << shard_no << " for msg id " << msg->txn_id << endl;
             fflush(stdout);
 
             count_2PC_vote.add(msg->txn_id, curr_count);
-            if (count_2PC_vote.get(msg->txn_id)[shard_no] == 0 && count_2PC_vote_per_shard.get(msg->txn_id) > 0) {
+            if ((count_2PC_vote.get(msg->txn_id)[shard_no] == 0) && (count_2PC_vote_per_shard.get(msg->txn_id) > 0)) {
                 int per_shard_count = count_2PC_vote_per_shard.get(msg->txn_id);
                 cout << "RS: Total Shard count is" << per_shard_count  << endl;
                 fflush(stdout);
+
                 per_shard_count--;
+
                 cout << "RS: Decremented to " << per_shard_count << endl;
                 fflush(stdout);
+
                 count_2PC_vote_per_shard.add(msg->txn_id, per_shard_count);
             }
             // important to return false here, fixed seg fault
+            vote_2pc.unlock();
             return false;
         }
     }
-    int vote_per_shard = count_2PC_vote_per_shard.get(msg->txn_id);
-    if (vote_per_shard == 0) {
+    if (count_2PC_vote_per_shard.exists(msg->txn_id) && count_2PC_vote_per_shard.get(msg->txn_id) == 0) {
         cout << "RS: Received Vote f + 1 for " << msg->txn_id << endl;
         fflush(stdout);
         count_2PC_vote.remove(msg->txn_id);
         count_2PC_vote_per_shard.remove(msg->txn_id);
+        vote_2pc.unlock();
         return true;
     }
+    vote_2pc.unlock();
     return false;
 }
 
 bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnManager *txn_man){
     // return true;
+    commit_2pc.lock();
     cout << "RS: Inside check_2pc_global_commit_recvd for txn: " << msg->txn_id << "\n";
     cout << "RC_TXN_ID: " << msg->rc_txn_id << endl;
     fflush(stdout);
@@ -2095,10 +2110,12 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
     if (!count_2PC_global_commit.exists(msg->rc_txn_id)) {
         cout << "RS: Commit: Setting count to: " << g_min_invalid_nodes << endl;
         fflush(stdout);
+
         count_2PC_global_commit.add(msg->rc_txn_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
+        commit_2pc.unlock();
         return false;
-    } else if (count_2PC_global_commit.get(msg->rc_txn_id) > 0) {
+    } else if ((count_2PC_global_commit.get(msg->rc_txn_id) > 0)) {
         int curr_count = count_2PC_global_commit.get(msg->rc_txn_id);
         cout << "RS: Commit: Decrementing count from: " << curr_count;
         fflush(stdout);
@@ -2106,9 +2123,11 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
         // Decrement count by 1
         curr_count--;
         count_2PC_global_commit.add(msg->rc_txn_id, curr_count);
+
         cout << " To: " << curr_count << endl;
         fflush(stdout);
         // important to return false here, fixed seg fault
+        commit_2pc.unlock();
         return false;
     }
 
@@ -2117,9 +2136,9 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
         cout << "RS: Received Global Commit from f + 1 for "<< msg->rc_txn_id << endl;
         fflush(stdout);
         count_2PC_global_commit.remove(msg->rc_txn_id);
-        //count_2PC_global_commit_seen.insert({msg->rc_txn_id, true});
+        commit_2pc.unlock();
         return true;
     }
-
+    commit_2pc.unlock();
     return false;
 }

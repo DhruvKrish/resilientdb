@@ -422,8 +422,11 @@ extern uint64_t payload_size;
 //To map batch_id to txn_id
 extern SpinLockMap<int, int> batch_id_directory;
 extern SpinLockMap<uint64_t, int> count_2PC_request;
+extern std::mutex request_2pc;
 extern SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
+extern std::mutex vote_2pc;
 extern SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+extern std::mutex commit_2pc;
 extern SpinLockMap<uint64_t, int> count_2PC_global_commit;
 
 #endif

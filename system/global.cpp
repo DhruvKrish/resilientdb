@@ -421,6 +421,9 @@ uint64_t payload_size = 51200;
 
 SpinLockMap<int, int> batch_id_directory;
 SpinLockMap<uint64_t, int> count_2PC_request;
+std::mutex request_2pc;
 SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
+std::mutex vote_2pc;
 SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+std::mutex commit_2pc;
 SpinLockMap<uint64_t, int> count_2PC_global_commit;

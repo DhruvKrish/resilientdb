@@ -69,7 +69,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
         else
         {
             cout << "Work Queue Inside else " << " g_node_id " << g_node_id << endl;
-            cout << "Get current view " << get_current_view(thd_id) << endl;
+            cout << "Get current view " << view_to_primary(get_current_view(thd_id), g_node_id) << endl;
             fflush(stdout);
             assert(entry->rtype < 100);
             while (!work_queue[0]->push(entry) && !simulation->is_done())
@@ -81,7 +81,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     {
         // Queue for Thread for ordered sending of batches.
         assert(entry->rtype < 100);
-        if (g_node_id != view_to_primary(get_current_view(thd_id), g_node_id))
+        if (g_node_id != get_current_view(thd_id))
         {
             while (!work_queue[0]->push(entry) && !simulation->is_done())
             {

@@ -91,14 +91,14 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Request_2PCBatch *)msg)->sign(dest[i]);
-            entry->allsign.push_back(((Request_2PCBatch *)msg)->signature);
+            entry->allsign.push_back(msg->signature);
         }
         break;
     case VOTE_2PC:
         for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Vote_2PC *)msg)->sign(dest[i]);
-            entry->allsign.push_back(((Vote_2PC *)msg)->signature);
+            entry->allsign.push_back(msg->signature);
         }
         break;
     case GLOBAL_COMMIT_2PC:
@@ -106,10 +106,10 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Global_Commit_2PC *)msg)->sign(dest[i]);
-            entry->allsign.push_back(((Global_Commit_2PC *)msg)->signature);
-        } 
+            entry->allsign.push_back(msg->signature);
+        }
         //cout<<"Enqueue case done"<<endl;
-        break;      
+        break;
 
 #if VIEW_CHANGES
     case VIEW_CHANGE:

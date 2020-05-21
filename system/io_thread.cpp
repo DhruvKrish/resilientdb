@@ -382,15 +382,18 @@ RC InputThread::server_recv_loop()
             }
             if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
             {
+                /* cout << "Do Nothing here" << endl;
+                fflush(stdout); */
                 /* if(count_2PC_request.exists(msg->batch_id) && count_2PC_request.get(msg->batch_id) == 0) {
+                    cout << "Ignored this request 2pc as count reached for " << msg->batch_id << endl;
+                    fflush(stdout);
                     msgs->erase(msgs->begin());
                     continue;
-                }
-                else  */
-                /* if(check_2pc_request_recvd(msg)) {
+                } */
+                if(check_2pc_request_recvd(msg)) {
                     cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
                     fflush(stdout);
-                    msg->txn_id = get_and_inc_next_idx2();
+                    msg->txn_id = get_and_inc_next_idx();
                     cout << " to " << msg->txn_id << endl;
                     cout << "Adding to the queue: " << msg->batch_id << endl;
                     fflush(stdout);
@@ -403,8 +406,8 @@ RC InputThread::server_recv_loop()
                     fflush(stdout);
                     msgs->erase(msgs->begin());
                     continue;
-                } */
-                msg->txn_id = get_and_inc_next_idx();
+                }
+                // msg->txn_id = get_and_inc_next_idx();
 
             }  else if(msg->rtype == REQUEST_2PC && !is_primary_node(get_thd_id(), g_node_id)) {
                 cout << "RS: Node is : " << g_node_id << endl;
@@ -412,11 +415,6 @@ RC InputThread::server_recv_loop()
                 fflush(stdout);
                 msgs->erase(msgs->begin());
                 continue;
-            }
-            // for every other msg except Request2PC
-            if(msg->rtype == REQUEST_2PC) {
-                cout << "RS IF:Get thd id " << get_thd_id() << endl;
-                fflush(stdout);
             }
             work_queue.enqueue(get_thd_id(), msg, false);
             msgs->erase(msgs->begin());
@@ -476,6 +474,7 @@ RC OutputThread::run()
 }
 
 bool InputThread::check_2pc_request_recvd(Message *msg){
+    request_2pc.lock();
     cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
     cout << "RS: batch_id: " << msg->batch_id << endl;
     fflush(stdout);
@@ -486,6 +485,7 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
         fflush(stdout);
         count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
+        request_2pc.unlock();
         return false;
     } else if (count_2PC_request.get(msg->batch_id) > 0) {
         int curr_count = count_2PC_request.get(msg->batch_id);
@@ -497,7 +497,8 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
         count_2PC_request.add(msg->batch_id, curr_count);
         cout << " To: " << curr_count << endl;
         fflush(stdout);
-        // important to return false here, fixed seg fault
+        //important to return false here, fixed seg fault
+        request_2pc.unlock();
         return false;
     }
 
@@ -506,7 +507,9 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
         cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
         fflush(stdout);
         count_2PC_request.remove(msg->batch_id);
+        request_2pc.unlock();
         return true;
     }
+    request_2pc.unlock();
     return false;
 }

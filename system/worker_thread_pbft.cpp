@@ -299,7 +299,7 @@ RC WorkerThread::process_batch2(Message *msg)
                 if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
                 if (isRefCommittee())
                 {
-                    send_cross_shard_execute_msg();   
+                    send_cross_shard_execute_msg();
                 }
                 else if(isOtherShard())
                 {
@@ -334,16 +334,15 @@ RC WorkerThread::process_batch2(Message *msg)
         }
     }
 
-    if(txn_man->is_2PC_Request_recvd())
-        cout<<"Inside process_batch: 2PC request set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;
+    /* if(txn_man->is_2PC_Request_recvd())
+        cout<<"Inside process_batch: 2PC request set in txn_man representing batch. rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
     if(txn_man->is_2PC_Vote_recvd())
         cout<<"Inside process_batch2: 2PC vote set in txn_man representing batch. rc_txn_id: "
         <<txn_man->get_txn_id_RC()<<endl;
     if(txn_man->is_2PC_Commit_recvd())
         cout<<"Inside process_batch2: 2PC commit set in txn_man representing batch. rc_txn_id: "
         <<txn_man->get_txn_id_RC()<<endl;
-    fflush(stdout);
+    fflush(stdout); */
 
     // Release this txn_man for other threads to use.
     bool ready = txn_man->set_ready();
@@ -399,7 +398,7 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
     // Check if sufficient number of Prepare messages have arrived.
     if (prepared(pmsg))
     {
-        if(txn_man->is_2PC_Request_recvd())
+        /* if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Vote_recvd())
@@ -408,7 +407,7 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
-        fflush(stdout);
+        fflush(stdout); */
 
 
         // Send Commit messages.
@@ -715,7 +714,7 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
         server_timer->endTimer(txn_man->hash2);
 #endif
         if(txn_man->is_2PC_Request_recvd())
-            cout<<"Inside process_pbft_commit: 2PC request set in txn_man representing batch. rc_txn_id: "
+            cout<<"Inside process_pbft_commit2: 2PC request set in txn_man representing batch. rc_txn_id: "
             <<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_commit2: 2PC vote set in txn_man representing batch. txn_id: "
@@ -765,15 +764,18 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
 //Methods for 2PC message processing
 RC WorkerThread::process_request_2pc(Message *msg)
 {
-    Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
-
-    printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
+    printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",msg->txn_id, get_thd_id(),msg->return_node_id ,msg->batch_id);
     cout << "RS place 1" << endl;
     fflush(stdout);
-    // msg->return_node_id = 0;
-    // cout << "RS: return node id changed to " << msg->return_node_id << endl;
-    // fflush(stdout);
-    create_and_send_batchreq(req2PC, req2PC->txn_id);
+    /* if(count_2PC_request.exists(msg->batch_id) && count_2PC_request.get(msg->batch_id) == 0) {
+        cout << "Ignored this request 2pc as count reached for " << msg->batch_id << endl;
+        return RCOK;
+    } */
+    // if(check_2pc_request_recvd(msg)) {
+        // msg->txn_id = get_and_inc_next_idx2();
+        Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
+        create_and_send_batchreq(req2PC, req2PC->txn_id);
+    //}
     return RCOK;
 }
 
@@ -787,7 +789,12 @@ RC WorkerThread::process_vote_2pc(Message *msg)
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
 
-    if((check_2pc_vote_recvd(vote2PC, txn_man))) {
+    /* if(count_2PC_vote_per_shard.exists(vote2PC->txn_id) && count_2PC_vote_per_shard.get(vote2PC->txn_id) == 0) {
+        cout << "Ignored this vote as count reached for " << vote2PC->txn_id << endl;
+        fflush(stdout);
+        return RCOK;
+    } */
+    if(check_2pc_vote_recvd(vote2PC, txn_man)) {
         send_batchreq_2PC(vote2PC, vote2PC->txn_id);
     }
 
@@ -803,6 +810,12 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     printf("Global_Commit_2PC txn_man txn_id: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
+
+   /*  if(count_2PC_global_commit.exists(commit2PC->rc_txn_id) && count_2PC_global_commit.get(commit2PC->rc_txn_id) == 0) {
+        cout << "Ignored this global commit as count reached for " << commit2PC->rc_txn_id << endl;
+        fflush(stdout);
+        return RCOK;
+    } */
 
     if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
         send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
