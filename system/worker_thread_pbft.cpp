@@ -822,3 +822,4 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     }
     return RCOK;
 }
+
