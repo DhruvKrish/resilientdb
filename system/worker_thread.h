@@ -30,7 +30,7 @@ public:
     RC process_pbft_commit_msg2(Message *msg);
     //Methods for 2PC message processing
     RC process_request_2pc(Message *msg);
-    bool check_2pc_request_recvd(Request_2PCBatch *msg);
+    bool check_2pc_request_recvd(Message *msg);
     RC process_vote_2pc(Message *msg);
     bool check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man);
     RC process_global_commit_2pc(Message *msg);

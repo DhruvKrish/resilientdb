@@ -362,6 +362,7 @@ extern std::mutex batchMTX;
 extern uint commonVar;
 
 // Variable used by Input thread at the primary to linearize batches.
+extern std::mutex nextIdxMTX;
 extern uint64_t next_idx;
 uint64_t get_and_inc_next_idx();
 void set_next_idx(uint64_t val);
@@ -432,10 +433,24 @@ extern double output_thd_idle_time[SEND_THREAD_CNT];
 extern uint64_t payload_size;
 #endif
 
-#if AHL 
+#if AHL
 
 //To map batch_id to txn_id
 extern SpinLockMap<int, int> batch_id_directory;
+
+// Count f+1 Request 2PC per batch_id/rc_txn_id
+extern SpinLockMap<uint64_t, int> count_2PC_request;
+extern std::mutex request_2pc;
+
+// Count f+1 Vote 2PC for each shard per batch_id/rc_txn_id
+extern SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
+// Count f+1 overall Vote 2PC between shards per batch_id/rc_txn_id
+extern SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+extern std::mutex vote_2pc;
+
+// Count f+1 Global Commit 2PC per batch_id/rc_txn_id
+extern SpinLockMap<uint64_t, int> count_2PC_global_commit;
+extern std::mutex commit_2pc;
 
 #endif
 

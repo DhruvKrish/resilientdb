@@ -789,15 +789,7 @@ RC WorkerThread::process_request_2pc(Message *msg)
     printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
     fflush(stdout);
 
-    //Check if f+1 2PC Request messages received for this transacation.
-    //if (check_2pc_request_recvd(req2PC))
-    //{
-        //Authenticate the reference committee signature.
-        //validate_msg(req2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
-        create_and_send_batchreq(req2PC, req2PC->txn_id);
-    //}
+    create_and_send_batchreq(req2PC, req2PC->txn_id);
 
     return RCOK;
 }
@@ -813,11 +805,6 @@ RC WorkerThread::process_vote_2pc(Message *msg)
     fflush(stdout);
 
     if(check_2pc_vote_recvd(vote2PC, txn_man)){
-
-        //Authenticate the reference committee signature.
-        //validate_msg(vote2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
         send_batchreq_2PC(vote2PC, vote2PC->txn_id);
     }
 
@@ -835,11 +822,6 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     fflush(stdout);
 
     if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
-
-        //Authenticate the reference committee signature.
-        //validate_msg(vote2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
         send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
     }
 
