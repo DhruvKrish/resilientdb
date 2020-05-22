@@ -169,7 +169,6 @@ public:
 #endif
 
     BatchRequests* get_primarybatch();
-    
     void set_query(BaseQuery *qry);
     BaseQuery *get_query();
     bool is_done();

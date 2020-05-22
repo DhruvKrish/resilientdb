@@ -488,8 +488,6 @@ RC WorkerThread::process_pbft_prep_msg2(Message *msg)
  */
 bool WorkerThread::committed_local(PBFTCommitMessage *msg)
 {
-
-    //cout<<"In commited local txnId : && txn-man commit count is"<<msg->txn_id<<txn_man->commit_rsp_cnt<<endl;
     /* if(txn_man->is_2PC_Vote_recvd()){
         //cout << "Check Commit: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
         fflush(stdout);
@@ -518,7 +516,7 @@ bool WorkerThread::committed_local(PBFTCommitMessage *msg)
             // If message did not match.
             //cout << txn_man->get_hash() << " :: " << msg->hash << "\n";
             //cout << get_current_view(get_thd_id()) << " :: " << msg->view << "\n";
-             //fflush(stdout);
+            //fflush(stdout);
             return false;
         }
     }
@@ -605,10 +603,8 @@ bool WorkerThread::committed_local2(PBFTCommitMessage *msg)
  */
 RC WorkerThread::process_pbft_commit_msg(Message *msg)
 {
-    //cout<<"In process pbft commit"<<endl;
-/* 
-    cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
-        " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()
+    /*cout << "PBFTCommitMessage: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
+    " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()
         <<" commit_rsp_count: "<<txn_man->commit_rsp_cnt<<endl;
         fflush(stdout);  */
 
@@ -616,7 +612,7 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
     {
         txn_man->txn_stats.time_start_commit = get_sys_clock();
     }
-PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
+    PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
 #if AHL
     if(!(txn_man->is_2PC_Vote_recvd() || txn_man->is_2PC_Commit_recvd()))
     {

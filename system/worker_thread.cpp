@@ -97,6 +97,7 @@ void WorkerThread::process(Message *msg)
         rc = process_client_batch(msg);
         break;
     case BATCH_REQ:
+    //cout<<"Received batchreq"<<endl;
 #if AHL
         {
             BatchRequests *breq_check = (BatchRequests *)msg;
@@ -114,11 +115,12 @@ void WorkerThread::process(Message *msg)
         break;
 #if AHL
     case CROSS_SHARD_EXECUTE:
-        cout<<"Received Cross Shard Execute"<<endl;
+       //cout<<"Received Cross Shard Execute"<<endl;
         process_cross_shard_execute_msg(msg);
         break;
 #endif
     case EXECUTE_MSG:
+     //cout<<"Received Execute"<<endl;
 #if AHL
         {
             cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
@@ -148,6 +150,7 @@ void WorkerThread::process(Message *msg)
         break;
 #endif
     case PBFT_PREP_MSG:
+    //cout<<"Received PBFT prep"<<endl;
 #if AHL
         {
             PBFTPrepMessage *pmsg_check = (PBFTPrepMessage *)msg;
@@ -159,6 +162,7 @@ void WorkerThread::process(Message *msg)
 #endif
         break;
     case PBFT_COMMIT_MSG:
+     //cout<<"Received PBFT Commit"<<endl;
 #if AHL
         {
             PBFTCommitMessage *pcmsg_check = (PBFTCommitMessage *)msg;
@@ -171,7 +175,7 @@ void WorkerThread::process(Message *msg)
         break;
 #if AHL
     case REQUEST_2PC:
-        cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
+        //cout<<"Received 2PC Req in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         fflush(stdout);
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
@@ -179,14 +183,14 @@ void WorkerThread::process(Message *msg)
         }
         break;
     case VOTE_2PC:
-        cout<<"Received 2PC Vote in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
+        //cout<<"Received 2PC Vote in Node "<<g_node_id<<" from node:"<<msg->return_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_vote_2pc(msg);
         }
         break;
     case GLOBAL_COMMIT_2PC:
-        cout<<"Received 2PC Global Commit in Node "<<g_node_id<<endl;
+        //cout<<"Received 2PC Global Commit in Node "<<g_node_id<<endl;
         //Only process message if node is primary of a shard
         if(is_primary_node(get_thd_id(),g_node_id)) {
             rc = process_global_commit_2pc(msg);
