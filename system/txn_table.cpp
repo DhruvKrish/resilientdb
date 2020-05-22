@@ -199,7 +199,7 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
     if (t_node == NULL)
     {
      //   cout<<"check2"<<endl;
-        cout << "txn: " << txn_id;
+        //cout << "txn: " << txn_id;
         assert(0);
     }
     //cout<<"check3"<<endl;

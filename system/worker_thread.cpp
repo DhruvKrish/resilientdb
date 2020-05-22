@@ -123,7 +123,7 @@ void WorkerThread::process(Message *msg)
      //cout<<"Received Execute"<<endl;
 #if AHL
         {
-            cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
+            //cout<<"[PH] Received Execute Msg for txn ID: "<<msg->txn_id<<endl;
             TxnManager* txn_man_check = get_transaction_manager(msg->txn_id+1, 0);
             Array<uint64_t> shardsInvolved = txn_man_check->get_shards_involved();
             //cout<<"Size of shardsInvolved: "<<shardsInvolved.get_count()<<endl;
@@ -250,7 +250,7 @@ RC WorkerThread::process_cross_shard_execute_msg(Message *msg)
         }
         else if(isRefCommittee() && g_node_id!=0 && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
         {
-            cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+            //cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
             send_execute_msg();
         }
 
@@ -299,7 +299,7 @@ RC WorkerThread::create_and_send_PREPARE_2PC(Message *msg)
         }  
         
 
-    printf("Sending Request_2PCBatch: TID:%ld : THD: %ld\n",rmsg->rc_txn_id, get_thd_id());
+    //printf("Sending Request_2PCBatch: TID:%ld : THD: %ld\n",rmsg->rc_txn_id, get_thd_id());
     //fflush(stdout);
 
     //enqueue to msg_queue
@@ -340,7 +340,7 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
             dest.push_back(i);           
         }
 
-    printf("Sending Vote: ");             
+    //printf("Sending Vote: ");             
         
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), vmsg, emptyvec, dest);
@@ -351,7 +351,7 @@ RC WorkerThread::create_and_send_Vote_2PC(Message *msg)
 
 RC WorkerThread::create_and_send_global_commit(Message *msg)
 {
-    cout<<"[PH] In create and send Global Commit func"<<endl;
+    //cout<<"[PH] In create and send Global Commit func"<<endl;
     Message *mssg = Message::create_message(GLOBAL_COMMIT_2PC);
     Global_Commit_2PC *gmsg = (Global_Commit_2PC *)mssg;
     gmsg->init();
@@ -361,7 +361,7 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
     gmsg->rc_txn_id = txn_man->get_txn_id();
     gmsg->batch_id = txn_man->get_txn_id();
 
-    cout<<"[PH] Txn man in create and send global, txn_id"<<&txn_man<<"  "<<txn_man->get_txn_id()<<" address:"<<&txn_man<<endl;
+    //cout<<"[PH] Txn man in create and send global, txn_id"<<&txn_man<<"  "<<txn_man->get_txn_id()<<" address:"<<&txn_man<<endl;
 
     BatchRequests* breqdeepcopy = txn_man->get_primarybatch();
     for (uint64_t i=0; i<breqdeepcopy->requestMsg.size(); i++)
@@ -391,12 +391,12 @@ RC WorkerThread::create_and_send_global_commit(Message *msg)
             }             
         }  
         
-    cout<<"Sending GlobalCommit"<<endl;
+    //cout<<"Sending GlobalCommit"<<endl;
     //enqueue to msg_queue
 	msg_queue.enqueue(get_thd_id(), gmsg, emptyvec, dest);
 	dest.clear();
 
-    cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+    //cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
     send_execute_msg();
 
     return RCOK;  
@@ -978,8 +978,8 @@ RC WorkerThread::run()
 #if AHL
             if(msg->rtype == GLOBAL_COMMIT_2PC){
                 //if(batch_id_directory.exists(msg->get_batch_id())) 
-                cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<msg->get_batch_id()<<" txn_id: "
-                <<batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1<<endl;
+                /* cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<msg->get_batch_id()<<" txn_id: "
+                <<batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1<<endl; */
                 txn_man = get_transaction_manager(batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1, 0);
             }
             else{
@@ -1543,8 +1543,8 @@ void WorkerThread::set_txn_man_fields(BatchRequests *breq, uint64_t bid)
     }
 
     if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd){
-        if(batch_id_directory.exists(breq->get_batch_id())) cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<breq->batch_id<<" txn_id: "
-        <<batch_id_directory.get(breq->batch_id) * get_batch_size() + get_batch_size() - 1<<endl;
+        /* if(batch_id_directory.exists(breq->get_batch_id())) cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<breq->batch_id<<" txn_id: "
+        <<batch_id_directory.get(breq->batch_id) * get_batch_size() + get_batch_size() - 1<<endl; */
         txn_man = get_transaction_manager(breq->txn_id + 2, 0);
     }
 #endif
@@ -1776,7 +1776,7 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
 //Function to send BatchRequest (Pre-Prepare) after receiving Vote_2PC or Global_Commit_2PC.
 void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
 
-    cout<<"In send_batchreq_2PC for tid: "<<tid<<endl;
+    //cout<<"In send_batchreq_2PC for tid: "<<tid<<endl;
 
     if(msg->rtype == VOTE_2PC){
         txn_man->set_2PC_Request_recvd();
@@ -1787,8 +1787,8 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         txn_man->set_2PC_Commit_recvd();
     }
 
-    if(txn_man->is_2PC_Commit_recvd())cout<<"Updated! txn_id: "<<txn_man->get_txn_id()
-    <<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
+    /* if(txn_man->is_2PC_Commit_recvd())cout<<"Updated! txn_id: "<<txn_man->get_txn_id()
+    <<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl; */
 
     // Creating a new BatchRequests Message.
     Message *bmsg = Message::create_message(BATCH_REQ);
@@ -1829,8 +1829,8 @@ void WorkerThread::send_batchreq_2PC(ClientQueryBatch *msg, uint64_t tid){
         emptyvec.push_back(txn_man->batchreq->signature);
     }
 
-    if(breq->TwoPC_Commit_recvd)printf("Enqueueing to msg queue BatchRequests from 2PC_Commit: TID:%ld : RC_TID:%ld\n",
-    breq->txn_id, breq->rc_txn_id);
+    /* if(breq->TwoPC_Commit_recvd)printf("Enqueueing to msg queue BatchRequests from 2PC_Commit: TID:%ld : RC_TID:%ld\n",
+    breq->txn_id, breq->rc_txn_id); */
     fflush(stdout);
 
     // Send the BatchRequests message to all the other replicas in the same shard.
@@ -1996,7 +1996,7 @@ bool WorkerThread::prepared(PBFTPrepMessage *msg)
  */
 bool WorkerThread::prepared2(PBFTPrepMessage *msg)
 {
-    cout << "Inside PREPARED2: " << txn_man->get_txn_id() << " prep count2: " << txn_man->get_prep_rsp_cnt2()<<endl;
+    //cout << "Inside PREPARED2: " << txn_man->get_txn_id() << " prep count2: " << txn_man->get_prep_rsp_cnt2()<<endl;
     fflush(stdout);
 
     // Once prepared is set, no processing for further messages.
