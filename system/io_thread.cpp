@@ -451,7 +451,7 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_request.exists(msg->batch_id)) {
-        cout << "RS: Request: Setting count to: " << g_min_invalid_nodes << endl;
+        cout << "RS: Request: Setting count to: " << g_min_invalid_nodes <<  " for txn:" << msg->batch_id << endl;
         fflush(stdout);
         count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
@@ -465,7 +465,7 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
         // Decrement count by 1
         curr_count--;
         count_2PC_request.add(msg->batch_id, curr_count);
-        cout << " To: " << curr_count << endl;
+        cout << " To: " << curr_count << " for txn:" << msg->batch_id << endl;
         fflush(stdout);
         //important to return false here, fixed seg fault
         request_2pc.unlock();

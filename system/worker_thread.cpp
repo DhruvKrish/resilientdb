@@ -1603,7 +1603,9 @@ void WorkerThread::create_and_send_batchreq(ClientQueryBatch *msg, uint64_t tid)
     Message *bmsg = Message::create_message(BATCH_REQ);
     BatchRequests *breq = (BatchRequests *)bmsg;
     breq->init(get_thd_id());
-
+    cout << "Msg Txn id --> " << msg->txn_id << endl;
+    cout << "Msg Batch id --> " << msg->batch_id << endl;
+    cout << "Msg Return node id --> " << msg->return_node << endl;
     // Starting index for this batch of transactions.
     next_set = tid;
 
@@ -2084,8 +2086,8 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_vote.exists(msg->txn_id)) {
-        cout << "RS: Inside setting shard size: " << total_shards << endl;
-        cout << "RS: return node id: " << msg->return_node_id << endl;
+        cout << "RS: Inside setting shard size: " << total_shards << " for txn:"<< msg->txn_id << endl;
+        cout << "RS: return node id: " << msg->return_node_id << " for txn:"<< msg->txn_id << endl;
         fflush(stdout);
 
         vector<int> shards_count(total_shards, g_min_invalid_nodes);
@@ -2096,7 +2098,7 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
         return false;
     } else {
         int shard_no = (int)(msg->return_node_id / g_shard_size);
-        cout << "RS: shard no is " << shard_no << endl;
+        cout << "RS: shard no is " << shard_no << " for txn:"<< msg->txn_id <<  endl;
         fflush(stdout);
 
         vector<int> curr_count = count_2PC_vote.get(msg->txn_id);
@@ -2113,12 +2115,12 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
             count_2PC_vote.add(msg->txn_id, curr_count);
             if ((count_2PC_vote.get(msg->txn_id)[shard_no] == 0) && (count_2PC_vote_per_shard.get(msg->txn_id) > 0)) {
                 int per_shard_count = count_2PC_vote_per_shard.get(msg->txn_id);
-                cout << "RS: Total Shard count is" << per_shard_count  << endl;
+                cout << "RS: Total Shard count is" << per_shard_count << " for txn:"<< msg->txn_id << endl;
                 fflush(stdout);
 
                 per_shard_count--;
 
-                cout << "RS: Decremented to " << per_shard_count << endl;
+                cout << "RS: Decremented to " << per_shard_count << " for txn:"<< msg->txn_id << endl;
                 fflush(stdout);
 
                 count_2PC_vote_per_shard.add(msg->txn_id, per_shard_count);
@@ -2149,7 +2151,7 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_global_commit.exists(msg->rc_txn_id)) {
-        cout << "RS: Commit: Setting count to: " << g_min_invalid_nodes << endl;
+        cout << "RS: Commit: Setting count to: " << g_min_invalid_nodes << " for txn:"<< msg->rc_txn_id << endl;
         fflush(stdout);
 
         count_2PC_global_commit.add(msg->rc_txn_id, g_min_invalid_nodes);
@@ -2165,7 +2167,7 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
         curr_count--;
         count_2PC_global_commit.add(msg->rc_txn_id, curr_count);
 
-        cout << " To: " << curr_count << endl;
+        cout << " To: " << curr_count << " for txn:"<< msg->rc_txn_id << endl;
         fflush(stdout);
         // important to return false here, fixed seg fault
         commit_2pc.unlock();
