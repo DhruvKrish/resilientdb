@@ -443,6 +443,7 @@ RC OutputThread::run()
     return FINISH;
 }
 
+#if AHL
 bool InputThread::check_2pc_request_recvd(Message *msg){
     request_2pc.lock();
     cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
@@ -483,3 +484,4 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
     request_2pc.unlock();
     return false;
 }
+#endif

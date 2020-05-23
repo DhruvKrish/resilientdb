@@ -2112,10 +2112,9 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
             cout << "RS: Adding " << curr_count[shard_no] << " for shard no " << shard_no << " for msg id " << msg->txn_id << endl;
             fflush(stdout);
 
-            count_2PC_vote.add(msg->txn_id, curr_count);
-            if ((count_2PC_vote.get(msg->txn_id)[shard_no] == 0) && (count_2PC_vote_per_shard.get(msg->txn_id) > 0)) {
+            if ((curr_count[shard_no] == 0) && (count_2PC_vote_per_shard.get(msg->txn_id) > 0)) {
                 int per_shard_count = count_2PC_vote_per_shard.get(msg->txn_id);
-                cout << "RS: Total Shard count is" << per_shard_count << " for txn:"<< msg->txn_id << endl;
+                cout << "RS: Total Shard count is " << per_shard_count << " for txn:"<< msg->txn_id << endl;
                 fflush(stdout);
 
                 per_shard_count--;
@@ -2125,12 +2124,13 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
 
                 count_2PC_vote_per_shard.add(msg->txn_id, per_shard_count);
             }
+            count_2PC_vote.add(msg->txn_id, curr_count);
             // important to return false here, fixed seg fault
             vote_2pc.unlock();
             return false;
         }
     }
-    if (count_2PC_vote_per_shard.exists(msg->txn_id) && count_2PC_vote_per_shard.get(msg->txn_id) == 0) {
+    if ((count_2PC_vote_per_shard.exists(msg->txn_id)) && (count_2PC_vote_per_shard.get(msg->txn_id) == 0)) {
         cout << "RS: Received Vote f + 1 for " << msg->txn_id << endl;
         fflush(stdout);
         count_2PC_vote.remove(msg->txn_id);
@@ -2158,7 +2158,7 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
         // important to return false here, fixed seg fault
         commit_2pc.unlock();
         return false;
-    } else if ((count_2PC_global_commit.get(msg->rc_txn_id) > 0)) {
+    } else if (count_2PC_global_commit.get(msg->rc_txn_id) > 0) {
         int curr_count = count_2PC_global_commit.get(msg->rc_txn_id);
         cout << "RS: Commit: Decrementing count from: " << curr_count;
         fflush(stdout);
@@ -2175,7 +2175,7 @@ bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnMana
     }
 
     // If count becomes 0, then erase RC_TXN_ID from the table and return true
-    if(count_2PC_global_commit.exists(msg->rc_txn_id) && count_2PC_global_commit.get(msg->rc_txn_id) == 0) {
+    if((count_2PC_global_commit.exists(msg->rc_txn_id)) && (count_2PC_global_commit.get(msg->rc_txn_id) == 0)) {
         cout << "RS: Received Global Commit from f + 1 for "<< msg->rc_txn_id << endl;
         fflush(stdout);
         count_2PC_global_commit.remove(msg->rc_txn_id);
