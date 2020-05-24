@@ -972,10 +972,21 @@ RC WorkerThread::run()
         if (msg->rtype != BATCH_REQ && msg->rtype != CL_BATCH && msg->rtype != EXECUTE_MSG && msg->rtype != REQUEST_2PC)
         {
 #if AHL
+            if((msg->rtype == GLOBAL_COMMIT_2PC || msg->rtype == VOTE_2PC) && !is_primary_node(get_thd_id(),g_node_id)){
+                Message::release_message(msg);
+                continue;
+            }
+
             if(msg->rtype == GLOBAL_COMMIT_2PC){
                 //if(batch_id_directory.exists(msg->get_batch_id())) 
+                if(!batch_id_directory.exists(msg->get_batch_id())){
+                    Message::release_message(msg);
+                    continue;
+                }
+                cout<<"About to get txn_id mapped to batch_id: "<<msg->get_batch_id()<<endl;
                 cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<msg->get_batch_id()<<" txn_id: "
                 <<batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1<<endl;
+                fflush(stdout);
                 txn_man = get_transaction_manager(batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1, 0);
             }
             else{

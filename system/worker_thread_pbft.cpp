@@ -822,6 +822,7 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     fflush(stdout);
 
     if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
+        cout << "Global_Commit_2PC Msg Batch id --> " << commit2PC->batch_id << endl;
         send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
     }
 
