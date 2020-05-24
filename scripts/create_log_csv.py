@@ -4,7 +4,7 @@ from datetime import date
 
 arguments = len(sys.argv) - 1
 if arguments != 5:
-    print("Expects 4 arguments")
+    print("Expects 5 arguments")
     print("create_log_csv.py <no_of_replicas> <no_of_clients> <batch_size> <no_of_cores> <csv_name>")
     exit(0)
 csv_file_name = sys.argv[-1] + '.csv'
