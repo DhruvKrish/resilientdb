@@ -656,7 +656,24 @@ PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
         if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
         if (isRefCommittee())
         {
-             send_cross_shard_execute_msg();
+            Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+             //if current node is reference committee, phase -> Cross shard transaction received from client && is_primary_node(get_thd_id(),g_node_id)
+            if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+            {
+            //create and send PREPARE_2PC_REQ message to the shards involved
+            create_and_send_PREPARE_2PC(csemsg);
+            }
+            else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+            {
+                //cout<<"Checking if condtn"<<endl;
+                create_and_send_Vote_2PC(csemsg);
+            }
+            else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+            {
+                //cout<<"Checking if condtn"<<endl;
+                create_and_send_global_commit(csemsg);
+                //send_execute_msg();
+            }
             
         }
         else if(isOtherShard())
