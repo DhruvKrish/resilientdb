@@ -1255,6 +1255,12 @@ RC WorkerThread::process_execute_msg(Message *msg)
     // End the execute counter.
     INC_STATS(get_thd_id(), time_execute, get_sys_clock() - ctime);
     cout<<"[PH] Successful execute3: txn_id: "<<txn_man->get_txn_id()<<endl;
+
+/*#if AHL
+    //Release batch_id from map
+    if(txn_man->get_batch_id() != 0 ) batch_id_directory.remove(txn_man->get_batch_id());
+#endif*/
+
     return RCOK;
 }
 
