@@ -674,7 +674,9 @@ PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
                 create_and_send_global_commit(csemsg);
                 //send_execute_msg();
             }
-            
+
+            cout<<"Before release csemsg: "<<csemsg->txn_id<<endl;
+            Message::release_message(csemsg); // Releasing the message.
         }
         else if(isOtherShard())
         {
