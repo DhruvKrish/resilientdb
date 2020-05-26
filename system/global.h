@@ -446,6 +446,7 @@ extern std::mutex request_2pc;
 extern SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
 // Count f+1 overall Vote 2PC between shards per batch_id/rc_txn_id
 extern SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+extern SpinLockMap<uint64_t, bool> seen_2PC_vote;
 extern std::mutex vote_2pc;
 
 // Count f+1 Global Commit 2PC per batch_id/rc_txn_id

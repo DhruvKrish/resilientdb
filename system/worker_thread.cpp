@@ -2110,14 +2110,18 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
     cout << "RS: Inside check_2pc_vote_recvd for txn: " << msg->txn_id << "\n";
     fflush(stdout);
     int total_shards = (int)(g_node_cnt / g_shard_size);
-
+    if(seen_2PC_vote.exists(msg->txn_id)) {
+        vote_2pc.unlock();
+        return false;
+    }
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_vote.exists(msg->txn_id)) {
         cout << "RS: Inside setting shard size: " << total_shards << " for txn:"<< msg->txn_id << endl;
         cout << "RS: return node id: " << msg->return_node_id << " for txn:"<< msg->txn_id << endl;
         fflush(stdout);
 
-        vector<int> shards_count(total_shards, g_min_invalid_nodes);
+        vector<int> shards_count(total_shards, g_min_invalid_nodes + 1);
+        shards_count[(msg->return_node_id / g_shard_size)] = g_min_invalid_nodes;
         count_2PC_vote.add(msg->txn_id, shards_count);
         count_2PC_vote_per_shard.add(msg->txn_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
@@ -2162,6 +2166,7 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
         fflush(stdout);
         count_2PC_vote.remove(msg->txn_id);
         count_2PC_vote_per_shard.remove(msg->txn_id);
+        seen_2PC_vote.add(msg->txn_id, true);
         vote_2pc.unlock();
         return true;
     }

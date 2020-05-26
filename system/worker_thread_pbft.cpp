@@ -86,7 +86,7 @@ RC WorkerThread::process_batch(Message *msg)
     assert(g_node_id != get_current_view(get_thd_id()));
 
     // Check if the message is valid.
-    //validate_msg(breq);
+    validate_msg(breq);
 
 #if VIEW_CHANGES
     // Store the batch as it could be needed during view changes.

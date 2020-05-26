@@ -439,6 +439,7 @@ std::mutex request_2pc;
 SpinLockMap<uint64_t, vector<int> > count_2PC_vote;
 std::mutex vote_2pc;
 SpinLockMap<uint64_t, int> count_2PC_vote_per_shard;
+SpinLockMap<uint64_t, bool> seen_2PC_vote;
 SpinLockMap<uint64_t, int> count_2PC_global_commit;
 std::mutex commit_2pc;
 #endif
