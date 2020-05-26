@@ -978,11 +978,13 @@ RC WorkerThread::run()
             }
 
             if(msg->rtype == GLOBAL_COMMIT_2PC){
-                //if(batch_id_directory.exists(msg->get_batch_id())) 
-                if(!batch_id_directory.exists(msg->get_batch_id())){
+                Global_Commit_2PC *commit2PC_check = (Global_Commit_2PC *)msg;
+                if(!check_2pc_global_commit_recvd(commit2PC_check)){
                     Message::release_message(msg);
                     continue;
                 }
+
+                cout << "Global_Commit_2PC Msg Batch id --> " << commit2PC_check->batch_id << endl;
                 cout<<"About to get txn_id mapped to batch_id: "<<msg->get_batch_id()<<endl;
                 cout<<"Retrieving batch_id to txn_id mapping batch_id: "<<msg->get_batch_id()<<" txn_id: "
                 <<batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1<<endl;
@@ -990,6 +992,14 @@ RC WorkerThread::run()
                 txn_man = get_transaction_manager(batch_id_directory.get(msg->get_batch_id()) * get_batch_size() + get_batch_size() - 1, 0);
             }
             else{
+                if(msg->rtype == VOTE_2PC){
+                    Vote_2PC *vote2PC_check = (Vote_2PC *)msg;
+                    if(!check_2pc_vote_recvd(vote2PC_check)){
+                        Message::release_message(msg);
+                        continue;
+                    }
+                }
+
                 txn_man = get_transaction_manager(msg->txn_id, 0);
             }
 #else
@@ -2094,7 +2104,7 @@ bool WorkerThread::check_2pc_request_recvd(Message *msg){
     return false;
 }
 
-bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
+bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
     // return true;
     vote_2pc.lock();
     cout << "RS: Inside check_2pc_vote_recvd for txn: " << msg->txn_id << "\n";
@@ -2159,7 +2169,7 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man){
     return false;
 }
 
-bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnManager *txn_man){
+bool WorkerThread::check_2pc_global_commit_recvd(Global_Commit_2PC *msg){
     // return true;
     commit_2pc.lock();
     cout << "RS: Inside check_2pc_global_commit_recvd for txn: " << msg->txn_id << "\n";

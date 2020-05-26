@@ -843,9 +843,7 @@ RC WorkerThread::process_vote_2pc(Message *msg)
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
 
-    if(check_2pc_vote_recvd(vote2PC, txn_man)){
-        send_batchreq_2PC(vote2PC, vote2PC->txn_id);
-    }
+    send_batchreq_2PC(vote2PC, vote2PC->txn_id);
 
     return RCOK;
 }
@@ -860,10 +858,7 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
 
-    if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
-        cout << "Global_Commit_2PC Msg Batch id --> " << commit2PC->batch_id << endl;
-        send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
-    }
+    send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
 
     return RCOK;
 }

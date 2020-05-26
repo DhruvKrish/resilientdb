@@ -32,9 +32,9 @@ public:
     RC process_request_2pc(Message *msg);
     bool check_2pc_request_recvd(Message *msg);
     RC process_vote_2pc(Message *msg);
-    bool check_2pc_vote_recvd(Vote_2PC *msg, TxnManager *txn_man);
+    bool check_2pc_vote_recvd(Vote_2PC *msg);
     RC process_global_commit_2pc(Message *msg);
-    bool check_2pc_global_commit_recvd(Global_Commit_2PC *msg, TxnManager *txn_man);
+    bool check_2pc_global_commit_recvd(Global_Commit_2PC *msg);
     RC process_pbft_prep_msg2(Message *msg);
     void send_cross_shard_execute_msg();
     RC process_cross_shard_execute_msg(Message *msg);
