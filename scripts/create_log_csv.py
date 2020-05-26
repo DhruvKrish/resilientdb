@@ -5,21 +5,23 @@ from datetime import date
 arguments = len(sys.argv) - 1
 if arguments != 5:
     print("Expects 5 arguments")
-    print("create_log_csv.py <no_of_replicas> <no_of_clients> <batch_size> <no_of_cores> <csv_name>")
+    print("create_log_csv.py <no_of_replicas> <no_of_clients> <batch_size> <no_of_cores> <cross_shard %> <csv_name>")
     exit(0)
 csv_file_name = sys.argv[-1] + '.csv'
 replicas = int(sys.argv[1])
 clients = int(sys.argv[2])
 batch_size = int(sys.argv[3])
 cores = int(sys.argv[4])
+cs_per = int(sys.argv[5])
 path = 's' + str(replicas) + '_c' + str(clients) + '_results_PBFT_b' + str(batch_size) + '_run0_node'
 with open(csv_file_name, 'a+', newline='') as csvFile:
     writer = csv.writer(csvFile)
     writer.writerow(['Batch Size', batch_size])
     writer.writerow(['Core',cores])
+    writer.writerow(['Clients', clients])
+    writer.writerow(['Cross Shard %', cs_per])
     today = date.today()
     writer.writerow(['Run Date & Time', today])
-    writer.writerow([''])
     nodes = ['Node']
     tput = ['tput']
     worker0_idle = ['Worker Thread 0']
@@ -60,5 +62,4 @@ with open(csv_file_name, 'a+', newline='') as csvFile:
     writer.writerow(worker4_idle)
     writer.writerow(virtual_mem)
     writer.writerow(physical_mem)
-    writer.writerow([''])
     writer.writerow([''])
