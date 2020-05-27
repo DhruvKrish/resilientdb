@@ -161,7 +161,6 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
 #if AHL
     prepared2 = false;
     committed_local2 = false;
-    
     prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
     commit_rsp_cnt2 = prep_rsp_cnt2+1;
     //2PC messages received should be false initially

@@ -652,15 +652,54 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         //if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
         if (isRefCommittee())
         {
-             send_cross_shard_execute_msg();
-            
+            Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+             //if current node is reference committee, phase -> Cross shard transaction received from client && is_primary_node(get_thd_id(),g_node_id)
+            if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+            {
+            //create and send PREPARE_2PC_REQ message to the shards involved
+            create_and_send_PREPARE_2PC(csemsg);
+            }
+            else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+            {
+                //cout<<"Checking if condtn"<<endl;
+                create_and_send_Vote_2PC(csemsg);
+            }
+            else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+            {
+                //cout<<"Checking if condtn"<<endl;
+                create_and_send_global_commit(csemsg);
+                //send_execute_msg();
+            }
+
+            cout<<"Before release csemsg: "<<csemsg->txn_id<<endl;
+            Message::release_message(csemsg); // Releasing the message.
         }
         else if(isOtherShard())
         {
             //cout<<"Choose execute_msg for othershard txn_id: "<<txn_man->get_txn_id()<<endl;
             if(!txn_man->is_2PC_Commit_recvd())
             {
-                send_cross_shard_execute_msg();
+                Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+                //if current node is reference committee, phase -> Cross shard transaction received from client && is_primary_node(get_thd_id(),g_node_id)
+                if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
+                {
+                //create and send PREPARE_2PC_REQ message to the shards involved
+                create_and_send_PREPARE_2PC(csemsg);
+                }
+                else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+                {
+                    //cout<<"Checking if condtn"<<endl;
+                    create_and_send_Vote_2PC(csemsg);
+                }
+                else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
+                {
+                    //cout<<"Checking if condtn"<<endl;
+                    create_and_send_global_commit(csemsg);
+                    //send_execute_msg();
+                }
+
+                cout<<"Before release csemsg: "<<csemsg->txn_id<<endl;
+                Message::release_message(csemsg); // Releasing the message.
             }
             else
             {
@@ -785,15 +824,7 @@ RC WorkerThread::process_request_2pc(Message *msg)
     //printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
     fflush(stdout);
 
-    //Check if f+1 2PC Request messages received for this transacation.
-    //if (check_2pc_request_recvd(req2PC))
-    //{
-        //Authenticate the reference committee signature.
-        //validate_msg(req2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
-        create_and_send_batchreq(req2PC, req2PC->txn_id);
-    //}
+    create_and_send_batchreq(req2PC, req2PC->txn_id);
 
     return RCOK;
 }
@@ -808,14 +839,7 @@ RC WorkerThread::process_vote_2pc(Message *msg)
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id()); */
     fflush(stdout);
 
-    if(check_2pc_vote_recvd(vote2PC, txn_man)){
-
-        //Authenticate the reference committee signature.
-        //validate_msg(vote2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
-        send_batchreq_2PC(vote2PC, vote2PC->txn_id);
-    }
+    send_batchreq_2PC(vote2PC, vote2PC->txn_id);
 
     return RCOK;
 }
@@ -830,14 +854,7 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id()); */
     fflush(stdout);
 
-    if(check_2pc_global_commit_recvd(commit2PC, txn_man)){
-
-        //Authenticate the reference committee signature.
-        //validate_msg(vote2PC);
-
-        // Initialize transaction managers and Send BatchRequests (PBFT Pre-Prepare) message.
-        send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
-    }
+    send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
 
     return RCOK;
 }

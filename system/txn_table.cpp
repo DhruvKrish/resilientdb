@@ -204,11 +204,7 @@ void TxnTable::release_transaction_manager(uint64_t thd_id, uint64_t txn_id, uin
     }
     //cout<<"check3"<<endl;
     assert(t_node->txn_man);
-    
-#if AHL
-    //Release batch_id from map
-    if(t_node->txn_man->get_batch_id() != 0 ) batch_id_directory.remove(t_node->txn_man->get_batch_id());
-#endif
+
     //cout<<"check4"<<endl;
     // Releasing the txn manager.
     txn_man_pool.put(txn_id, t_node->txn_man);

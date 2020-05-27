@@ -13,6 +13,9 @@ public:
     RC run();
     RC client_recv_loop();
     RC server_recv_loop();
+    #if AHL
+    bool check_2pc_request_recvd(Message *msg);
+    #endif
     void check_for_init_done();
     void setup();
     void managekey(KeyExchange *keyex);
