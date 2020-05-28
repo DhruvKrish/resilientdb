@@ -64,8 +64,8 @@ UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
 UInt32 g_core_cnt = CORE_CNT;
 UInt32 g_thread_cnt = THREAD_CNT;
 
-#if AHL 
-// new constant for shard size
+#if AHL
+// New constant for shard size (number of replicas/nodes in each shard)
 UInt32 g_shard_size = SHARD_SIZE;
 #endif
 
@@ -159,34 +159,34 @@ CryptoPP::ed25519::Signer signer;
 uint64_t receivedKeys[NODE_CNT + CLIENT_NODE_CNT];
 
 /*********************************************/
-#if AHL 
-// method to check if node is primary in a shard
+#if AHL
+// Method to check if node is primary in a shard
 bool is_primary_node(uint64_t thd_id, uint64_t node){
 
 	return view_to_primary(get_current_view(thd_id) ,node) == node;
 }
 
-//method to get shard number
+// Method to get shard number assigned to node i
 uint64_t get_shard_number(uint64_t i){
-	//If i is client node
+	// If i is client node
 	if (i >= g_node_cnt && i < g_node_cnt + g_client_node_cnt)
     {
         int client_number = g_node_id - g_node_cnt;
         return (client_number % (g_node_cnt/g_shard_size));
     }
-	//If i is replica
+	// If i is replica
     else
     {
         return (i / g_shard_size);
     }
 }
 
-// method to get primary node
+// Method to get primary node
 uint64_t view_to_primary(uint64_t view, uint64_t node){
 	return get_shard_number(node) * g_shard_size + view;
 }
 
-// method to check if node is in same shard
+// Method to check if nodes are in the same shard
 int is_in_same_shard(uint64_t first_id, uint64_t second_id)
 {
     return (int)(first_id / g_shard_size) == (int)(second_id / g_shard_size);
@@ -201,7 +201,8 @@ uint64_t totKey = 0;
 
 uint64_t indexSize = 2 * g_client_node_cnt * g_inflight_max;
 //Number of invalid/faulty nodes
-#if AHL 
+#if AHL
+// f = (n-1)/2 for each shard (assuming no equivocation)
 uint64_t g_min_invalid_nodes = (g_shard_size - 1) / 2;
 #else
 uint64_t g_min_invalid_nodes = (g_node_cnt - 1) / 3; //min number of valid nodes
@@ -368,6 +369,7 @@ void set_newView(uint64_t thd_id, bool val)
 // Size of the batch
 uint64_t g_batch_size = BATCH_SIZE;
 #if AHL
+// Variable for number of shards
 uint64_t g_shard_cnt = NODE_CNT / SHARD_SIZE;
 #endif
 uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];
@@ -433,6 +435,7 @@ uint64_t payload_size = 51200;
 #endif
 
 #if AHL
+// Hashmaps and locks used in the protocol.
 SpinLockMap<int, int> batch_id_directory;
 SpinLockMap<uint64_t, int> count_2PC_request;
 std::mutex request_2pc;

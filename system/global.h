@@ -171,8 +171,7 @@ extern UInt32 g_repl_type;
 extern UInt32 g_repl_cnt;
 
 #if AHL
-
-// variable for shard size
+// Variable for shard size
 extern UInt32 g_shard_size;
 #endif
 
@@ -311,14 +310,14 @@ struct KeyPairHex
     std::string privateKey;
 };
 
-#if AHL 
+#if AHL
 /*********************************************/
-// new methods for sharding
+// New methods for sharding
 uint64_t get_shard_number(uint64_t i = g_node_id);
 uint64_t view_to_primary(uint64_t view, uint64_t node = g_node_id);
 int is_in_same_shard(uint64_t first_id,uint64_t second_id);
 bool is_primary_node(uint64_t thd_id, uint64_t node = g_node_id);
-// end of new methods 
+// End of new methods 
 /*********************************************/
 #endif
 
@@ -395,8 +394,8 @@ void set_newView(uint64_t thd_id, bool val);
 
 // Size of the batch.
 extern uint64_t g_batch_size;
-#if AHL 
-//Number of shards
+#if AHL
+// Number of shards
 extern uint64_t g_shard_cnt;
 #endif
 uint64_t get_batch_size();
@@ -435,7 +434,7 @@ extern uint64_t payload_size;
 
 #if AHL
 
-//To map batch_id to txn_id
+// To map batch_id/rc_txn_id to txn_id
 extern SpinLockMap<int, int> batch_id_directory;
 
 // Count f+1 Request 2PC per batch_id/rc_txn_id

@@ -110,6 +110,7 @@ void InputThread::setup()
                         msg->txn_id = get_and_inc_next_idx();
                     }
 #if AHL
+                    // REQUEST_2PC can be logically thought of as a client request for non reference committee shards
                     if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
                     {
                         msg->txn_id = get_and_inc_next_idx();
@@ -359,29 +360,37 @@ RC InputThread::server_recv_loop()
                 INC_STATS(_thd_id, msg_cl_in, 1);
             }
 #if AHL
+            // Linearize requests in non reference committee shards during cross shard txns
             if(msg->rtype == REQUEST_2PC && is_primary_node(get_thd_id(),g_node_id))
             {
+                // Check for 2PC intra shard count
                 if(check_2pc_request_recvd(msg)) {
-                    cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
-                    fflush(stdout);
+                    //cout << "RS: Batch Id is " << msg->batch_id << " and Incrementing txn id from " << msg->txn_id;
+                    //fflush(stdout);
+
                     msg->txn_id = get_and_inc_next_idx();
-                    cout << " to " << msg->txn_id << endl;
-                    cout << "Adding to the queue: " << msg->batch_id << endl;
-                    fflush(stdout);
-                    cout << "RS Count: Get thd id " << get_thd_id() << endl;
+
+                    //cout << " to " << msg->txn_id << endl;
+                    //cout << "Adding to the queue: " << msg->batch_id << endl;
+                    //fflush(stdout);
+                    //cout << "RS Count: Get thd id " << get_thd_id() << endl;
+
+                    // Push to work queue if check is valid
                     work_queue.enqueue(get_thd_id(), msg, false);
-                    msgs->erase(msgs->begin());
-                    continue;
-                } else {
-                    cout << "Erasing message " << msg->batch_id << " now" << endl;
-                    fflush(stdout);
-                    msgs->erase(msgs->begin());
-                    continue;
                 }
-            } else if(msg->rtype == REQUEST_2PC && !is_primary_node(get_thd_id(), g_node_id)) {
-                cout << "RS: Node is : " << g_node_id << endl;
-                cout << "RS: Else part to not enqueue message " << msg->batch_id << endl;
-                fflush(stdout);
+
+                //cout << "Erasing message " << msg->batch_id << " now" << endl;
+                //fflush(stdout);
+                msgs->erase(msgs->begin());
+                continue;
+
+            // Non primary nodes should not process REQUEST_2PC messages
+            }
+            else if(msg->rtype == REQUEST_2PC && !is_primary_node(get_thd_id(), g_node_id)) 
+            {
+                //cout << "RS: Node is : " << g_node_id << endl;
+                //cout << "RS: Else part to not enqueue message " << msg->batch_id << endl;
+                //fflush(stdout);
                 msgs->erase(msgs->begin());
                 continue;
             }
@@ -444,30 +453,31 @@ RC OutputThread::run()
 }
 
 #if AHL
+// Method to check if f+1 REQUEST_2PC messages are received for a txn during intra shard communication
 bool InputThread::check_2pc_request_recvd(Message *msg){
     request_2pc.lock();
-    cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    cout << "RS: batch_id: " << msg->batch_id << endl;
-    fflush(stdout);
+    //cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
+    //cout << "RS: batch_id: " << msg->batch_id << endl;
+    //fflush(stdout);
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_request.exists(msg->batch_id)) {
-        cout << "RS: Request: Setting count to: " << g_min_invalid_nodes <<  " for txn:" << msg->batch_id << endl;
-        fflush(stdout);
+        //cout << "RS: Request: Setting count to: " << g_min_invalid_nodes <<  " for txn:" << msg->batch_id << endl;
+        //fflush(stdout);
         count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
         // important to return false here, fixed seg fault
         request_2pc.unlock();
         return false;
     } else if (count_2PC_request.get(msg->batch_id) > 0) {
         int curr_count = count_2PC_request.get(msg->batch_id);
-        cout << "RS: Request: Decrementing count from: " << curr_count;
-        fflush(stdout);
+        //cout << "RS: Request: Decrementing count from: " << curr_count;
+        //fflush(stdout);
 
         // Decrement count by 1
         curr_count--;
         count_2PC_request.add(msg->batch_id, curr_count);
-        cout << " To: " << curr_count << " for txn:" << msg->batch_id << endl;
-        fflush(stdout);
+        //cout << " To: " << curr_count << " for txn:" << msg->batch_id << endl;
+        //fflush(stdout);
         //important to return false here, fixed seg fault
         request_2pc.unlock();
         return false;
@@ -475,8 +485,8 @@ bool InputThread::check_2pc_request_recvd(Message *msg){
 
     // If count becomes 0, then erase RC_TXN_ID from the table and return true
     if ((count_2PC_request.exists(msg->batch_id)) && (count_2PC_request.get(msg->batch_id) == 0)) {
-        cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
-        fflush(stdout);
+        //cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
+        //fflush(stdout);
         count_2PC_request.remove(msg->batch_id);
         request_2pc.unlock();
         return true;

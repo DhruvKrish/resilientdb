@@ -67,6 +67,7 @@ void ClientThread::setup()
 	commonVar++;
 	batchMTX.unlock();
 #if AHL
+	// Number of batches sent initialized to 0.
 	txn_batch_sent_cnt = 0;
 #endif
 
@@ -208,16 +209,17 @@ RC ClientThread::run()
 		YCSBClientQueryMessage *clqry = (YCSBClientQueryMessage *)msg;
 		clqry->return_node = g_node_id;
 #if AHL
-		clqry->cross_shard_txn=false;
+		// Add info in last txn of each batch
 		if(addMore == g_batch_size-1)
 		{
+			// Decide whether batch should be cross sharded or not.
 			if (txn_batch_sent_cnt % 100 < CROSS_SHARD_PRECENTAGE)
             {
-				//If cross shard, send to primary of first shard
+				// If cross shard, send to primary of first shard (assumed to be node 0 in normal run)
 				next_node_id = 0;
-                //Enable inter_shard flag as all messages in the batch are cross-shard transaction requests
+                // Enable cross shard flag (signifies cross sharded batch)
 				clqry->cross_shard_txn=true;
-				//All requests are shard transactions with size g_shard_cnt
+				// All requests are cross shard transactions with g_shard_cnt involved shards
 				clqry->shards_involved.init(g_shard_cnt);
                 for (uint64_t i = 0; i < g_shard_cnt; i++)
                     clqry->shards_involved.add(i);
@@ -226,6 +228,9 @@ RC ClientThread::run()
 			{
 				//Send to primary of shard assigned to this client
 				next_node_id = get_shard_number(g_node_id)*g_shard_size;
+				// Not a cross shard txn
+				clqry->cross_shard_txn=false;
+				// Only assigned shard is involved
 				clqry->shards_involved.init(1);
 				clqry->shards_involved.add(get_shard_number(g_node_id));
 			}
@@ -259,6 +264,7 @@ RC ClientThread::run()
 			msg_queue.enqueue(get_thd_id(), bmsg, emptyvec, dest);
 			dest.clear();
 #if AHL
+			// Increment batches sent count
 			txn_batch_sent_cnt++;
 #endif
 

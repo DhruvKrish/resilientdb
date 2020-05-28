@@ -88,6 +88,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         }
         break;
 #if AHL
+    // Handle enqueue for 2PC messages
     case REQUEST_2PC:
         for (uint64_t i = 0; i < dest.size(); i++)
         {
@@ -103,13 +104,11 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
         }
         break;
     case GLOBAL_COMMIT_2PC:
-        //cout<<"In case GLOBAL_COMMIT_2PC"<<endl;
         for (uint64_t i = 0; i < dest.size(); i++)
         {
             ((Global_Commit_2PC *)msg)->sign(dest[i]);
             entry->allsign.push_back(msg->signature);
-        } 
-        //cout<<"Enqueue case done"<<endl;
+        }
         break;  
 #endif    
 
@@ -160,6 +159,7 @@ void MessageQueue::enqueue(uint64_t thd_id, Message *msg, const vector<string> &
     case PBFT_PREP_MSG:
     case PBFT_COMMIT_MSG:
 #if AHL
+    // 2PC messages
     case REQUEST_2PC:
     case VOTE_2PC:
     case GLOBAL_COMMIT_2PC:

@@ -44,6 +44,7 @@ bool TxnTable::is_matching_txn_node(txn_node_t t_node, uint64_t txn_id, uint64_t
     assert(t_node);
 
 #if AHL
+    // Search for txn_man only based on txn_id
     return (t_node->txn_man->get_txn_id() == txn_id);
 #else
     return (t_node->txn_man->get_txn_id() == txn_id && t_node->txn_man->get_batch_id() == batch_id);
@@ -99,13 +100,8 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
     {
         if (is_matching_txn_node(t_node, txn_id, batch_id))
         {
-            /*cout<<"Found txn manager: "<<t_node->txn_man->get_txn_id()<<" batch_id: "<<t_node->txn_man->get_batch_id()
-            <<" rc_txn_id: "<<t_node->txn_man->get_txn_id_RC()<<" is2PCReqrecvd: "
-            <<t_node->txn_man->is_2PC_Request_recvd()<<endl;
-            fflush(stdout);*/
             // Transaction manager found.
             txn_man = t_node->txn_man;
-            //cout<<"[PH] value of is_matching_txn_node for txn_id:"<<txn_id<<" batch id:"<<batch_id<<" is "<<is_matching_txn_node(t_node, txn_id, batch_id)<<" tman address: "<<txn_man<<endl;
             break;
         }
         t_node = t_node->next;
@@ -130,11 +126,12 @@ TxnManager *TxnTable::get_transaction_manager(uint64_t thd_id, uint64_t txn_id, 
         txn_man->set_batch_id(batch_id);
 #if AHL
         txn_man->set_txn_id_RC(batch_id);
+        // batch_id!=0 signifies that the batch is for cross shard transactions.
         if(batch_id!=0) txn_man->set_cross_shard_txn();
         else txn_man->txn->cross_shard_txn = false;
 
-        //Set 2PC Request Received flag if txn is cross sharded.
-        //We will only create a txn_man when shards receive 2PC_Request.
+        // Set 2PC Request Received flag if txn is cross sharded.
+        // We will only create a txn_man when non reference committee shards receive REQUEST_2PC.
         if(txn_man->get_txn_id_RC() != 0) txn_man->set_2PC_Request_recvd();
         else txn_man->TwoPC_Request_recvd=false;
 #endif

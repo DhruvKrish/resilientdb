@@ -14,6 +14,7 @@ public:
     RC client_recv_loop();
     RC server_recv_loop();
     #if AHL
+    // Method to check if f+1 REQUEST_2PC messages received for each txn during intra shard communication
     bool check_2pc_request_recvd(Message *msg);
     #endif
     void check_for_init_done();
