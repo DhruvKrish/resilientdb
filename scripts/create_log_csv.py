@@ -3,10 +3,11 @@ import csv
 from datetime import date
 
 arguments = len(sys.argv) - 1
-if arguments != 5:
-    print("Expects 5 arguments")
+if arguments != 6:
+    print("Expects 6 arguments")
     print("create_log_csv.py <no_of_replicas> <no_of_clients> <batch_size> <no_of_cores> <cross_shard %> <csv_name>")
     exit(0)
+# set variable values
 csv_file_name = sys.argv[-1] + '.csv'
 replicas = int(sys.argv[1])
 clients = int(sys.argv[2])
@@ -19,6 +20,7 @@ with open(csv_file_name, 'a+', newline='') as csvFile:
     writer.writerow(['Batch Size', batch_size])
     writer.writerow(['Core',cores])
     writer.writerow(['Clients', clients])
+    writer.writerow(['Replicas', replicas])
     writer.writerow(['Cross Shard %', cs_per])
     today = date.today()
     writer.writerow(['Run Date & Time', today])

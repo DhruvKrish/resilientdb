@@ -453,44 +453,55 @@ RC OutputThread::run()
 }
 
 #if AHL
-// Method to check if f+1 REQUEST_2PC messages are received for a txn during intra shard communication
+
+/* Method to check if f+1 REQUEST_2PC messages are received for a txn during
+ * intra shard communication
+ */
 bool InputThread::check_2pc_request_recvd(Message *msg){
+    // Allow only one thread in critical section
     request_2pc.lock();
-    //cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
-    //cout << "RS: batch_id: " << msg->batch_id << endl;
-    //fflush(stdout);
+    /* cout << "RS: Inside check_2pc_request_recvd for txn: " << msg->txn_id << "\n";
+    cout << "RS: batch_id: " << msg->batch_id << endl;
+    fflush(stdout); */
 
     // Set count to f, if rc_txn_id not found, insert, else decrement it by 1
     if (!count_2PC_request.exists(msg->batch_id)) {
-        //cout << "RS: Request: Setting count to: " << g_min_invalid_nodes <<  " for txn:" << msg->batch_id << endl;
-        //fflush(stdout);
+        /* cout << "RS: Request: Setting count to: " << g_min_invalid_nodes <<  " for txn:" << msg->batch_id << endl;
+        fflush(stdout); */
+
+        // set count to f = g_min_invalid_nodes
         count_2PC_request.add(msg->batch_id, g_min_invalid_nodes);
-        // important to return false here, fixed seg fault
+        // unlock and return false
         request_2pc.unlock();
         return false;
     } else if (count_2PC_request.get(msg->batch_id) > 0) {
         int curr_count = count_2PC_request.get(msg->batch_id);
-        //cout << "RS: Request: Decrementing count from: " << curr_count;
-        //fflush(stdout);
+        /* cout << "RS: Request: Decrementing count from: " << curr_count;
+        fflush(stdout); */
 
         // Decrement count by 1
         curr_count--;
         count_2PC_request.add(msg->batch_id, curr_count);
-        //cout << " To: " << curr_count << " for txn:" << msg->batch_id << endl;
-        //fflush(stdout);
-        //important to return false here, fixed seg fault
+
+        /* cout << " To: " << curr_count << " for txn:" << msg->batch_id << endl;
+        fflush(stdout); */
+
+        // unlock and return false
         request_2pc.unlock();
         return false;
     }
 
     // If count becomes 0, then erase RC_TXN_ID from the table and return true
     if ((count_2PC_request.exists(msg->batch_id)) && (count_2PC_request.get(msg->batch_id) == 0)) {
-        //cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
-        //fflush(stdout);
+        /* cout << "RS: Received Request f + 1 for "<< msg->batch_id << endl;
+        fflush(stdout); */
+
         count_2PC_request.remove(msg->batch_id);
+        // unlock and return true
         request_2pc.unlock();
         return true;
     }
+    // unlock and return false
     request_2pc.unlock();
     return false;
 }
