@@ -215,13 +215,16 @@ RC ClientThread::run()
 			// Decide whether batch should be cross sharded or not.
 			if (txn_batch_sent_cnt % 100 < CROSS_SHARD_PRECENTAGE)
             {
+				uint64_t shardRandom = (rand() % (g_shard_cnt-1))+1;
+				cout<<shardRandom+1<<endl;
+				fflush(stdout);
 				// If cross shard, send to primary of first shard (assumed to be node 0 in normal run)
 				next_node_id = 0;
                 // Enable cross shard flag (signifies cross sharded batch)
 				clqry->cross_shard_txn=true;
 				// All requests are cross shard transactions with g_shard_cnt involved shards
-				clqry->shards_involved.init(g_shard_cnt);
-                for (uint64_t i = 0; i < g_shard_cnt; i++)
+				clqry->shards_involved.init(shardRandom+1);
+                for (uint64_t i = 0; i < shardRandom+1; i++)
                     clqry->shards_involved.add(i);
             }
 			else
