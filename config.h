@@ -6,7 +6,7 @@
 //Percentage of cross shard transactions
 #define CROSS_SHARD_PRECENTAGE 100
 // Make node count to 8, 4 per shard
-#define NODE_CNT 8
+#define NODE_CNT 12
 // Number of worker threads at primary. For RBFT (6) and other algorithms (5). 
 #define THREAD_CNT 5 
 #define REM_THREAD_CNT 3
@@ -161,6 +161,8 @@
 #define ZYZZYVA 3 
 #define HOTSTUFF 4 
 #define AHL true
+// Reference Committee + Random Shards are involved in each cross shard transaction
+#define AHLRandom false
 // Switching on RBFT consensus. 
 // Status: Partial implementation, only for PBFT. 
 #define RBFT_ON false 

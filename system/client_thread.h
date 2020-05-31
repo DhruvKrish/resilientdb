@@ -28,6 +28,10 @@ private:
     // Count of number of batches sent by client.
     uint64_t txn_batch_sent_cnt;
 #endif
+#if AHLRandom
+    // Variable to count the number of shards involved in the cross shard txn other than reference committee
+    uint64_t shardRandom;
+#endif
 };
 
 #endif
