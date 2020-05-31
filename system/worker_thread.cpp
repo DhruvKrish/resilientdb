@@ -2122,8 +2122,8 @@ bool WorkerThread::check_2pc_vote_recvd(Vote_2PC *msg){
 
             // if individual shard count reaches 0, decerement vote value by 1
             if ((curr_count[shard_no] == 0) && (count_2PC_vote_per_shard.get(msg->txn_id) > 0)) {
-                /* int per_shard_count = count_2PC_vote_per_shard.get(msg->txn_id);
-                cout << "RS: Total Shard count is " << per_shard_count << " for txn:"<< msg->txn_id << endl;
+                int per_shard_count = count_2PC_vote_per_shard.get(msg->txn_id);
+                /*cout << "RS: Total Shard count is " << per_shard_count << " for txn:"<< msg->txn_id << endl;
                 fflush(stdout); */
 
                 // Decrement count by 1
