@@ -58,6 +58,7 @@ void QWorkQueue::enqueue(uint64_t thd_id, Message *msg, bool busy)
     if (msg->rtype == CL_QRY || msg->rtype == CL_BATCH || msg->rtype == REQUEST_2PC)
     {
 #if AHL
+        // Only primary of shard should process these messages
         if (g_node_id == view_to_primary(get_current_view(thd_id), g_node_id))
         {
 #else

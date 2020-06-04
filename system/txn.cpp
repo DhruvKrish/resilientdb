@@ -112,7 +112,9 @@ void Transaction::init()
     txn_id = UINT64_MAX;
     batch_id = UINT64_MAX;
 #if AHL
+    // Indicates txn_id of Reference Committee
     txn_id_RC = UINT64_MAX;
+    // Flag to check if transaction is cross sharded
     cross_shard_txn=false;
 #endif
 
@@ -159,6 +161,7 @@ void TxnManager::init(uint64_t pool_id, Workload *h_wl)
     
     chkpt_cnt = 2 * g_min_invalid_nodes;
 #if AHL
+    // Second local PBFT variables
     prepared2 = false;
     committed_local2 = false;
     prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
@@ -206,8 +209,10 @@ void TxnManager::release(uint64_t pool_id)
 #endif
     txn_pool.put(pool_id, txn);
 #if AHL
-    //Release shard list array if transaction was cross sharded
+    // Release shard list array if transaction was cross sharded
     if(get_cross_shard_txn())txn->shards_involved.release();
+    // Release batch_id mapping from map (will only be in map if batch_id!=0)
+    if(get_batch_id()!=0) batch_id_directory.remove(get_batch_id());
 #endif
     txn = NULL;
 
@@ -220,6 +225,7 @@ void TxnManager::release(uint64_t pool_id)
     chkpt_cnt = 2 * g_min_invalid_nodes + 1;
 #if AHL
     hash2.clear();
+    // Second local PBFT variables should be false initially
     prepared2 = false;
     prep_rsp_cnt2 = 2 * g_min_invalid_nodes;
     commit_rsp_cnt2 = prep_rsp_cnt2+1;
@@ -313,6 +319,7 @@ txnid_t TxnManager::get_txn_id()
 }
 
 #if AHL
+// Methods for AHL
 
 void TxnManager::set_txn_id_RC(txnid_t txn_id_RC)
 {
@@ -500,6 +507,8 @@ uint64_t TxnManager::get_prep_rsp_cnt()
     return prep_rsp_cnt;
 }
 #if AHL
+// Helper functions for second local PBFT
+
 void TxnManager::set_prepared2()
 {
     prepared2 = true;
@@ -555,6 +564,8 @@ uint64_t TxnManager::get_commit_rsp_cnt()
 }
 
 #if AHL
+// Helper functions for second local PBFT
+
 void TxnManager::set_committed2()
 {
     committed_local2 = true;
@@ -634,7 +645,7 @@ void TxnManager::send_pbft_prep_msgs()
     Message *msg = Message::create_message(this, PBFT_PREP_MSG);
     PBFTPrepMessage *pmsg = (PBFTPrepMessage *)msg;
 #if AHL
-    //Assign which local pbft the message is for
+    // Assign which local pbft the message is for
     if(!is_2PC_Vote_recvd() && !is_2PC_Commit_recvd()) pmsg->first_local_pbft = true;
     else pmsg->first_local_pbft = false;
 #endif
@@ -655,7 +666,7 @@ void TxnManager::send_pbft_prep_msgs()
             continue;
         }
 #if AHL
-        // added for sharding
+        // Don't send to nodes of same shard
         if (!is_in_same_shard(i, g_node_id))
         {
             continue;
@@ -698,7 +709,7 @@ void TxnManager::send_pbft_commit_msgs()
             continue;
         }
 #if AHL
-        // added for sharding
+        // Don't send to nodes of same shard
         if (!is_in_same_shard(i, g_node_id))
         {
             continue;

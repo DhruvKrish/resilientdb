@@ -202,8 +202,8 @@ uint64_t totKey = 0;
 uint64_t indexSize = 2 * g_client_node_cnt * g_inflight_max;
 //Number of invalid/faulty nodes
 #if AHL
-// f = (n-1)/2 for each shard (assuming no equivocation)
-uint64_t g_min_invalid_nodes = (g_shard_size - 1) / 2;
+// Change to f = (n-1)/2 for each shard (if assuming no equivocation)
+uint64_t g_min_invalid_nodes = (g_shard_size - 1) / 3;
 #else
 uint64_t g_min_invalid_nodes = (g_node_cnt - 1) / 3; //min number of valid nodes
 #endif

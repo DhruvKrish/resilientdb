@@ -73,14 +73,18 @@ RC WorkerThread::process_batch(Message *msg)
 
     BatchRequests *breq = (BatchRequests *)msg;
 #if AHL
-    if(breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd)
+    
+    if(breq->TwoPC_Request_recvd || breq->TwoPC_Vote_recvd || breq->TwoPC_Commit_recvd)
     {
-        //printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
-        //if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-        //if(breq->TwoPC_Vote_recvd)cout<<"BatchRequest vote 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
-        //if(breq->TwoPC_Commit_recvd)cout<<"BatchRequest commit 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        /*
+        printf("BatchRequests: TID:%ld : RC_TID:%ld VIEW: %ld : THD: %ld\n",breq->txn_id, breq->rc_txn_id,breq->view, get_thd_id());
+        if(breq->TwoPC_Request_recvd)cout<<"BatchRequest request 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        if(breq->TwoPC_Vote_recvd)cout<<"BatchRequest vote 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
+        if(breq->TwoPC_Commit_recvd)cout<<"BatchRequest commit 2PC set. breq rc_rxn_id: "<<breq->rc_txn_id<<endl;
         fflush(stdout);
+        */
     }
+
 #endif
     // Assert that only a non-primary replica has received this message.
     assert(g_node_id != get_current_view(get_thd_id()));
@@ -176,8 +180,9 @@ RC WorkerThread::process_batch(Message *msg)
         <<txn_man->get_txn_id_RC()<<endl;
     if(txn_man->is_2PC_Commit_recvd())
         cout<<"Inside process_batch: 2PC commit set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;*/
+        <<txn_man->get_txn_id_RC()<<endl;
     fflush(stdout);
+    */
 #endif
 
     // Release this txn_man for other threads to use.
@@ -342,8 +347,9 @@ RC WorkerThread::process_batch2(Message *msg)
         <<txn_man->get_txn_id_RC()<<endl;
     if(txn_man->is_2PC_Commit_recvd())
         cout<<"Inside process_batch2: 2PC commit set in txn_man representing batch. rc_txn_id: "
-        <<txn_man->get_txn_id_RC()<<endl;*/
+        <<txn_man->get_txn_id_RC()<<endl;
     fflush(stdout);
+    */
 
     // Release this txn_man for other threads to use.
     bool ready = txn_man->set_ready();
@@ -402,15 +408,15 @@ RC WorkerThread::process_pbft_prep_msg(Message *msg)
     {
         /*if(txn_man->is_2PC_Request_recvd())
             cout<<"Inside process_pbft_prep: 2PC request set in txn_man representing batch. rc_txn_id: "
-            <<txn_man->get_txn_id_RC()<<endl;*/
-       /*  if(txn_man->is_2PC_Vote_recvd())
+            <<txn_man->get_txn_id_RC()<<endl;
+        if(txn_man->is_2PC_Vote_recvd())
             cout<<"Inside process_pbft_prep: 2PC vote set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" txn_id_RC: "<<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_prep: 2PC commit set in txn_man representing batch. txn_id: "
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
- */
+        */
 
         // Send Commit messages.
         txn_man->send_pbft_commit_msgs();
@@ -439,8 +445,9 @@ RC WorkerThread::process_pbft_prep_msg2(Message *msg)
         << " rc_txn_id: "<<txn_man->get_txn_id_RC()
         <<" prep_rsp_count2: "<<txn_man->prep_rsp_cnt2<<endl;
         cout << "is_2PC_Request_recvd: "<< txn_man->is_2PC_Request_recvd()<<endl;
-        cout << "is_2PC_Vote_recvd: "<< txn_man->is_2PC_Vote_recvd()<<endl; */
+        cout << "is_2PC_Vote_recvd: "<< txn_man->is_2PC_Vote_recvd()<<endl;
         fflush(stdout);
+        */
 
     // Start the counter for prepare phase.
     if (txn_man->prep_rsp_cnt2 == 2 * g_min_invalid_nodes)
@@ -463,8 +470,9 @@ RC WorkerThread::process_pbft_prep_msg2(Message *msg)
             <<txn_man->get_txn_id()<<" txn_id_RC: "<<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_prep2: 2PC commit set in txn_man representing batch. txn_id: "
-            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;*/
+            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
+        */
 
         // Send Commit messages.
         txn_man->send_pbft_commit_msgs();
@@ -548,7 +556,7 @@ bool WorkerThread::committed_local2(PBFTCommitMessage *msg)
 {
     if(txn_man->is_2PC_Vote_recvd()){
         //cout << "Check Commit2: TID: " << txn_man->get_txn_id()<< " rc_txn_id: "<<txn_man->get_txn_id_RC()<< endl;
-        fflush(stdout);
+        //fflush(stdout);
     }
 
     // Once committed is set for this transaction, no further processing.
@@ -613,18 +621,9 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
         txn_man->txn_stats.time_start_commit = get_sys_clock();
     }
     PBFTCommitMessage *pcmsg = (PBFTCommitMessage *)msg;
-#if AHL
-    if(!(txn_man->is_2PC_Vote_recvd() || txn_man->is_2PC_Commit_recvd()))
-    {
-           // Check if message is valid.
-        validate_msg(pcmsg);
-        txn_man->add_commit_msg(pcmsg);
-    }
-#else
+
     validate_msg(pcmsg);
-    txn_man->add_commit_msg(pcmsg);
-#endif
-     
+    txn_man->add_commit_msg(pcmsg);     
 
     // Check if sufficient number of Commit messages have arrived.
     if (committed_local(pcmsg))
@@ -648,81 +647,34 @@ RC WorkerThread::process_pbft_commit_msg(Message *msg)
     //cout<<"txn_id: "<<txn_man->get_txn_id()<<" txnman->cs: "<<txn_man->get_cross_shard_txn()<<endl;
 #if AHL
    if(txn_man->get_cross_shard_txn())
-    {      
-        //if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+    {    
+        Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+
         if (isRefCommittee())
         {
-            Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
-             //if current node is reference committee, phase -> Cross shard transaction received from client && is_primary_node(get_thd_id(),g_node_id)
-            if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
-            {
             //create and send PREPARE_2PC_REQ message to the shards involved
             create_and_send_PREPARE_2PC(csemsg);
-            }
-            else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
-            {
-                //cout<<"Checking if condtn"<<endl;
-                create_and_send_Vote_2PC(csemsg);
-            }
-            else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
-            {
-                //cout<<"Checking if condtn"<<endl;
-                create_and_send_global_commit(csemsg);
-                //send_execute_msg();
-            }
-
-            cout<<"Before release csemsg: "<<csemsg->txn_id<<endl;
-            Message::release_message(csemsg); // Releasing the message.
         }
         else if(isOtherShard())
-        {
-            //cout<<"Choose execute_msg for othershard txn_id: "<<txn_man->get_txn_id()<<endl;
-            if(!txn_man->is_2PC_Commit_recvd())
-            {
-                Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
-                //if current node is reference committee, phase -> Cross shard transaction received from client && is_primary_node(get_thd_id(),g_node_id)
-                if(isRefCommittee() && !txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd)
-                {
-                //create and send PREPARE_2PC_REQ message to the shards involved
-                create_and_send_PREPARE_2PC(csemsg);
-                }
-                else if (isOtherShard() && txn_man->TwoPC_Request_recvd && !txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
-                {
-                    //cout<<"Checking if condtn"<<endl;
-                    create_and_send_Vote_2PC(csemsg);
-                }
-                else if (isRefCommittee() && txn_man->TwoPC_Vote_recvd && !txn_man->TwoPC_Commit_recvd)
-                {
-                    //cout<<"Checking if condtn"<<endl;
-                    create_and_send_global_commit(csemsg);
-                    //send_execute_msg();
-                }
+        { 
+            create_and_send_Vote_2PC(csemsg);            
+        }
 
-                cout<<"Before release csemsg: "<<csemsg->txn_id<<endl;
-                Message::release_message(csemsg); // Releasing the message.
-            }
-            else
-            {
-                //cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
-                send_execute_msg();
-            }
-            
-        }    
-    }   
-    
+        Message::release_message(csemsg); // Releasing the message.
+    }
     else
     {
        // Add this message to execute thread's queue.
-        send_execute_msg();  
+        send_execute_msg();
     }
 
         INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
     
 #else
-  // Add this message to execute thread's queue.
-        send_execute_msg();
+    // Add this message to execute thread's queue.
+    send_execute_msg();
 
-        INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
+    INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
 #endif
 }
     return RCOK;
@@ -743,8 +695,9 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
 {
        /*  cout << "PBFTCommitMessage2: TID " << msg->txn_id << " FROM: " << msg->return_node_id << 
         " batch_id :"<<msg->batch_id<< " rc_txn_id: "<<txn_man->get_txn_id_RC()
-        <<" commit_rsp_count2: "<<txn_man->commit_rsp_cnt2<<endl; */
+        <<" commit_rsp_count2: "<<txn_man->commit_rsp_cnt2<<endl;
         fflush(stdout);
+        */
 
     if (txn_man->commit_rsp_cnt2 == 2 * g_min_invalid_nodes+1)
     {
@@ -776,39 +729,34 @@ RC WorkerThread::process_pbft_commit_msg2(Message *msg)
             <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         if(txn_man->is_2PC_Commit_recvd())
             cout<<"Inside process_pbft_commit2: 2PC Commit set in txn_man representing batch. txn_id: "
-            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;*/
+            <<txn_man->get_txn_id()<<" rc_txn_id: "<<txn_man->get_txn_id_RC()<<endl;
         fflush(stdout);
+        */
 
 
-    //cout<<"txn_id: "<<txn_man->get_txn_id()<<" txnman->cs: "<<txn_man->get_cross_shard_txn()<<endl;
-    if(txn_man->get_cross_shard_txn())
-    {      
-        //if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
-        if (isRefCommittee())
-        {
-             send_cross_shard_execute_msg();
-            
-        }
-        else if(isOtherShard())
-        {
-            //cout<<"Choose execute_msg for othershard txn_id: "<<txn_man->get_txn_id()<<endl;
-            if(!txn_man->is_2PC_Commit_recvd())
+        //cout<<"txn_id: "<<txn_man->get_txn_id()<<" txnman->cs: "<<txn_man->get_cross_shard_txn()<<endl;
+        if(txn_man->get_cross_shard_txn())
+        {      
+            //if(txn_man->is_2PC_Commit_recvd()) cout<<"Choose shard for execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
+            if (isRefCommittee())
             {
-                send_cross_shard_execute_msg();
+                Message *csemsg = Message::create_message(txn_man, CROSS_SHARD_EXECUTE);
+
+                create_and_send_global_commit(csemsg);
+
+                Message::release_message(csemsg); // Releasing the message.
             }
-            else
+            else if(isOtherShard())
             {
                 //cout<<"About to call send_execute_msg txn_id: "<<txn_man->get_txn_id()<<endl;
                 send_execute_msg();
-            }
-            
-        }       
-    }
-    else
-    {
-       // Add this message to execute thread's queue.
-        send_execute_msg();  
-    }
+            }       
+        }
+        else
+        {
+        // Add this message to execute thread's queue.
+            send_execute_msg();  
+        }
 
         INC_STATS(get_thd_id(), time_commit, get_sys_clock() - txn_man->txn_stats.time_start_commit);
     }
