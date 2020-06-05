@@ -570,7 +570,7 @@ bool WorkerThread::committed_local2(PBFTCommitMessage *msg)
     {
         if(txn_man->is_2PC_Vote_recvd()){
             //cout << "committed_local2 hash2 empty: " << txn_man->get_txn_id() << "\n";
-            fflush(stdout);
+            //fflush(stdout);
         }
         txn_man->info_commit2.push_back(msg->return_node);
         return false;
@@ -770,7 +770,7 @@ RC WorkerThread::process_request_2pc(Message *msg)
     Request_2PCBatch *req2PC = (Request_2PCBatch *)msg;
 
     //printf("Request_2PCBatch local txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld\n",req2PC->txn_id, get_thd_id(),msg->return_node_id ,req2PC->rc_txn_id);
-    fflush(stdout);
+    //fflush(stdout);
 
     create_and_send_batchreq(req2PC, req2PC->txn_id);
 
@@ -784,8 +784,9 @@ RC WorkerThread::process_vote_2pc(Message *msg)
    /*  printf("Vote_2PC txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
     vote2PC->txn_id, get_thd_id(),msg->return_node_id ,vote2PC->rc_txn_id,vote2PC->batch_id);
     printf("Vote_2PC txn_man txn_id: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
-    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id()); */
+    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
+    */
 
     send_batchreq_2PC(vote2PC, vote2PC->txn_id);
 
@@ -799,8 +800,9 @@ RC WorkerThread::process_global_commit_2pc(Message *msg)
     /* printf("Global_Commit_2PC txn_id: %ld, THD: %ld :: From node: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
     commit2PC->txn_id, get_thd_id(),msg->return_node_id ,commit2PC->rc_txn_id,commit2PC->batch_id);
     printf("Global_Commit_2PC txn_man txn_id: %ld :: rc_txn_id: %ld :: batch_id: %ld\n",
-    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id()); */
+    txn_man->get_txn_id(), txn_man->get_txn_id_RC(), txn_man->get_batch_id());
     fflush(stdout);
+    */
 
     send_batchreq_2PC(commit2PC, txn_man->get_txn_id());
 
