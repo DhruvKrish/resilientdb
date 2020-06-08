@@ -129,6 +129,7 @@ Message *Message::create_message(RemReqType rtype)
 		msg = new BatchRequests;
 		break;
 #if AHL
+	/* 2PC messages*/
 	case REQUEST_2PC:
 		msg = new Request_2PCBatch;
 		break;
@@ -196,7 +197,7 @@ uint64_t Message::mget_size()
 	size += sizeof(RemReqType);
 	size += sizeof(uint64_t);
 #if AHL
-	//Size for batch_id
+	// Size for batch_id
 	size += sizeof(uint64_t);
 #endif
 
@@ -357,6 +358,7 @@ void Message::release_message(Message *msg)
 		break;
 	}
 #if AHL
+	/* Release 2PC messages*/
 	case REQUEST_2PC:
 	{
 		Request_2PCBatch *m_msg = (Request_2PCBatch *)msg;
@@ -628,7 +630,7 @@ void YCSBClientQueryMessage::release()
 	}
 	requests.release();
 #if AHL
-	// Release shards
+	// Release shards involved array
 	shards_involved.release();
 #endif
 }
@@ -642,7 +644,7 @@ uint64_t YCSBClientQueryMessage::get_size()
 	size += sizeof(ycsb_request) * requests.size();
 	size += sizeof(return_node);
 #if AHL
-	//Add shard request information to the message size
+	// Add cross shard transaction information to the message size
 	size += sizeof(cross_shard_txn);
 	size += sizeof(size_t);
 	size += sizeof(uint64_t) * shards_involved.size();
@@ -698,6 +700,7 @@ void YCSBClientQueryMessage::copy_from_buf(char *buf)
 		requests.add(req);
 	}
 #if AHL
+	// Copy cross shard transaction info
 	COPY_VAL(cross_shard_txn, buf, ptr);
 	size_t sizeOfShards;
 	COPY_VAL(sizeOfShards, buf, ptr);
@@ -729,10 +732,9 @@ void YCSBClientQueryMessage::copy_to_buf(char *buf)
 	}
 
 #if AHL
-	//Copy sharding related flag and array to buffer
+	// Copy sharding related flag and array to buffer
 	COPY_BUF(buf, cross_shard_txn, ptr);
 	size_t sizeOfShards = shards_involved.size();
-	//cout<<"Size of shard: "<<sizeOfShards<<endl;
 	COPY_BUF(buf, sizeOfShards, ptr);
 	for (uint64_t i = 0; i < sizeOfShards; i++)
 	{
@@ -1072,17 +1074,17 @@ bool ClientResponseMessage::validate()
 	//fflush(stdout);
 
 #if AHL
-	//If client response not from reference committee or assigned shard
+	// If client response not from reference committee or assigned shard
 	if(this->return_node_id>=g_shard_size && get_shard_number(this->return_node_id)!=get_shard_number(g_node_id))
 	{
 		return false;
 	}
-	//Check last txn received from assigned shard
+	// Check last txn received from assigned shard
 	if(get_shard_number(this->return_node_id)==get_shard_number(g_node_id) && this->txn_id <= get_last_valid_txn())
 	{
 		return false;
 	}
-	//Check last txn received from reference committee
+	// Check last txn received from reference committee
 	if(this->return_node_id<g_shard_size && this->txn_id <= get_last_valid_txn_ref_committee())
 	{
 		return false;
@@ -1143,9 +1145,9 @@ bool ClientResponseMessage::validate()
 	}
 
 #if AHL
-	//Set last_txn of either assigned shard or reference committee base on return_node_id
-	if(this->return_node_id<g_shard_size) set_last_valid_txn_ref_committee(this->txn_id);
-	else if(get_shard_number(this->return_node_id)==get_shard_number(g_node_id)) set_last_valid_txn(this->txn_id);
+	// Set last_txn of 1) reference committee or 2) assigned shard based on return_node_id
+	if(this->return_node_id < g_shard_size) set_last_valid_txn_ref_committee(this->txn_id);
+	else if(get_shard_number(this->return_node_id) == get_shard_number(g_node_id)) set_last_valid_txn(this->txn_id);
 #else
 	// If true, set this as the next transaction completed.
 	set_last_valid_txn(this->txn_id);
@@ -1350,6 +1352,7 @@ uint64_t ClientQueryBatch::get_size()
 	return size;
 }
 #if AHL
+/* 2PC messages*/
 uint64_t Request_2PCBatch::get_size()
 {
 	uint64_t size = ClientQueryBatch::get_size();
@@ -1432,6 +1435,7 @@ void ClientQueryBatch::copy_from_buf(char *buf)
 }
 
 #if AHL
+/* 2PC messages*/
 void Request_2PCBatch::copy_from_buf(char *buf)
 {
 	ClientQueryBatch::copy_from_buf(buf);
@@ -1478,6 +1482,7 @@ void ClientQueryBatch::copy_to_buf(char *buf)
 }
 
 #if AHL
+/* 2PC messages*/
 void Request_2PCBatch::copy_to_buf(char *buf)
 {
 	ClientQueryBatch::copy_to_buf(buf);
@@ -1546,7 +1551,9 @@ void ClientQueryBatch::sign(uint64_t dest_node)
 	this->sigSize = this->signature.size();
 	this->keySize = this->pubKey.size();
 }
+
 #if AHL
+/* Sign Request 2PC message (uncomment to activate)*/
 void Request_2PCBatch::sign(uint64_t dest_node)
 {
 this->signature = "0";
@@ -1584,7 +1591,7 @@ bool ClientQueryBatch::validate()
 #endif // Client_Batch
 
 #if AHL
- //makes sure message is valid, returns true for false
+// Check if Request 2PC message is valid
 bool Request_2PCBatch::validate()
 {
 return true;
@@ -1609,6 +1616,7 @@ uint64_t BatchRequests::get_size()
 
 	size += sizeof(batch_size);
 #if AHL
+	/* Sizes of 2PC info */
 	size += sizeof(rc_txn_id);
 	size += sizeof(TwoPC_Request_recvd);
 	size += sizeof(TwoPC_Vote_recvd);
@@ -1633,10 +1641,10 @@ void BatchRequests::init(uint64_t thd_id)
 	this->index.init(get_batch_size());
 	this->requestMsg.resize(get_batch_size());
 #if AHL
-	//init rc_txn_id. Will be assigned a value only if cross shard transaction.
+	// Init rc_txn_id. Will be assigned a value only if cross shard transaction.
 	this->rc_txn_id = UINT64_MAX;
-	//batch_id is 0 by default (for non-cross sharded transactions)
-	//For cross sharded transactions, batch_id != 0
+	// batch_id is 0 by default (for non-cross sharded transactions)
+	// For cross sharded transactions, batch_id != 0 (assigned to last transaction in batch)
 	this->batch_id = 0;
 	this->TwoPC_Request_recvd = false;
 	this->TwoPC_Vote_recvd = false;
@@ -1677,7 +1685,7 @@ void BatchRequests::copy_from_txn(TxnManager *txn, YCSBClientQueryMessage *clqry
 	this->requestMsg[idx] = yqry;
 	this->index.add(txnid);
 #if AHL
-	//Copy 2PC info
+	/* Copy 2PC info */
 	this->rc_txn_id = txn->get_txn_id_RC();
 	this->batch_id = txn->get_batch_id();
 	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
@@ -1692,10 +1700,10 @@ void BatchRequests::copy_from_txn(TxnManager *txn)
 	this->txn_id = txn->get_txn_id() - 2;
 	this->batch_size = get_batch_size();
 #if AHL
-	//Set rc_txn_id as the rc_txn_id received from 2PC_Request
+	// Set rc_txn_id as the rc_txn_id received from 2PC_Request
 	this->rc_txn_id = txn->get_txn_id_RC();
 	this->batch_id = txn->get_batch_id();
-	//Copy 2PC state info
+	// Copy 2PC state info
 	this->TwoPC_Request_recvd = txn->is_2PC_Request_recvd();
 	this->TwoPC_Vote_recvd = txn->is_2PC_Vote_recvd();
 	this->TwoPC_Commit_recvd = txn->is_2PC_Commit_recvd();

@@ -203,9 +203,9 @@ public:
 
 #if AHL
 
-    //This ClientQuery Message is a cross-shard transacton if cross_shard_txn is set
+    // This ClientQuery Message is a cross-shard transacton if cross_shard_txn is set
     bool cross_shard_txn;
-    //List of shards involved in the cross-shard transaction
+    // List of shards involved in the cross-shard transaction
     Array<uint64_t> shards_involved;
 #endif
 };
@@ -264,6 +264,7 @@ public:
 #endif
 
 #if AHL
+/* 2PC messages */
 class Request_2PCBatch : public ClientQueryBatch
 {
 public:
@@ -362,9 +363,9 @@ public:
     string hash;
     uint32_t batch_size;
 #if AHL
-    //Corresponding txn_id for Reference Committee in cross sharded transactions
+    // Corresponding txn_id for Reference Committee in cross sharded transactions
     uint64_t rc_txn_id;
-    //Information about 2PC state of batch
+    //I nformation about 2PC state of each batch of transactions
     bool TwoPC_Request_recvd;
     bool TwoPC_Vote_recvd;
     bool TwoPC_Commit_recvd;
@@ -466,7 +467,7 @@ public:
     uint64_t end_index;
     uint32_t batch_size;
 #if AHL
-    //Check if first or second local PBFT for 2PC
+    // Check if first or second local PBFT for 2PC
     bool first_local_pbft;
 #endif
 };
@@ -494,6 +495,7 @@ public:
     uint64_t end_index;
     uint64_t batch_size;
 #if AHL
+    // Check if first or second local PBFT for 2PC
     bool first_local_pbft;
 #endif
 };
