@@ -229,9 +229,9 @@ RC ClientThread::run()
                 for (uint64_t i = 0; i <= shardRandom; i++)
                     clqry->shards_involved.add(i);
 			#else
-				// All requests are cross shard transactions with g_shard_cnt involved shards
-				clqry->shards_involved.init(g_shard_cnt);
-                for (uint64_t i = 0; i < g_shard_cnt; i++)
+				// All requests are cross shard transactions with the first g_shard_involved_num involved shards
+				clqry->shards_involved.init(g_shard_involved_num);
+                for (uint64_t i = 0; i < g_shard_involved_num; i++)
                     clqry->shards_involved.add(i);
 			#endif
             }

@@ -397,6 +397,8 @@ extern uint64_t g_batch_size;
 #if AHL
 // Number of shards
 extern uint64_t g_shard_cnt;
+// Number of shards involved in cross shard transactions
+extern uint64_t g_shard_involved_num;
 #endif
 uint64_t get_batch_size();
 extern uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];

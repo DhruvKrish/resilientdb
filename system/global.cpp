@@ -371,6 +371,8 @@ uint64_t g_batch_size = BATCH_SIZE;
 #if AHL
 // Variable for number of shards
 uint64_t g_shard_cnt = NODE_CNT / SHARD_SIZE;
+// Number of shards involved in cross shard transactions
+uint64_t g_shard_involved_num = SHARDS_INVOLVED_NUMBER;
 #endif
 uint64_t batchSet[2 * CLIENT_NODE_CNT * MAX_TXN_IN_FLIGHT];
 uint64_t get_batch_size()

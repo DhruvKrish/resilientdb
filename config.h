@@ -3,8 +3,11 @@
 // Specify the number of servers or replicas 
 // New constant for shard size
 #define SHARD_SIZE 4
+// Only the first SHARDS_INVOLVED_NUMBER of shards will be involved in cross shard transactions
+// Note: This does not apply if AHLRandom is set to true (all shards will be involved randomly in that case)
+#define SHARDS_INVOLVED_NUMBER 2
 //Percentage of cross shard transactions
-#define CROSS_SHARD_PRECENTAGE 100
+#define CROSS_SHARD_PRECENTAGE 50
 // Make node count to 8, 4 per shard
 #define NODE_CNT 12
 // Number of worker threads at primary. For RBFT (6) and other algorithms (5). 
@@ -160,8 +163,10 @@
 #define PBFT 2 
 #define ZYZZYVA 3 
 #define HOTSTUFF 4 
+// Switch to AHL protocol. Make sure to correctly define the sharding variables.
 #define AHL true
-// Reference Committee + Random Shards are involved in each cross shard transaction
+// Reference Committee + Random number of Shards are involved in each cross shard transaction
+// Maximum number of shards = Node Count / Shard size
 #define AHLRandom false
 // Switching on RBFT consensus. 
 // Status: Partial implementation, only for PBFT. 
